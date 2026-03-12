@@ -1,5 +1,7 @@
 import Link from "next/link"
-import { Scan, Twitter, Instagram, Linkedin, Facebook } from "lucide-react"
+import Image from "next/image"
+import { Scan, Twitter, Instagram, Linkedin, Facebook, Github, Globe } from "lucide-react"
+import { siteConfig } from "@/lib/seo/config"
 
 const footerLinks = {
   product: [
@@ -14,10 +16,17 @@ const footerLinks = {
 }
 
 const socialLinks = [
-  { href: "#", icon: Twitter, label: "Twitter" },
-  { href: "#", icon: Instagram, label: "Instagram" },
-  { href: "#", icon: Linkedin, label: "LinkedIn" },
-  { href: "#", icon: Facebook, label: "Facebook" },
+  { href: siteConfig.links.twitter, icon: Twitter, label: "Twitter" },
+  { href: siteConfig.links.instagram, icon: Instagram, label: "Instagram" },
+  { href: siteConfig.links.linkedin, icon: Linkedin, label: "LinkedIn" },
+  { href: siteConfig.links.facebook, icon: Facebook, label: "Facebook" },
+]
+
+const developerSocialLinks = [
+  { href: siteConfig.developer.social.instagram, icon: Instagram, label: "Instagram" },
+  { href: siteConfig.developer.social.twitter, icon: Twitter, label: "Twitter" },
+  { href: siteConfig.developer.social.github, icon: Github, label: "GitHub" },
+  { href: siteConfig.developer.social.portfolio, icon: Globe, label: "Portfolio" },
 ]
 
 export function Footer() {
@@ -78,11 +87,13 @@ export function Footer() {
           {/* Social Links */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-foreground">Connect</h3>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               {socialLinks.map((social) => (
                 <Link
                   key={social.label}
                   href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-muted transition-colors hover:bg-primary hover:text-primary-foreground"
                   aria-label={social.label}
                 >
@@ -91,14 +102,54 @@ export function Footer() {
               ))}
             </div>
             <p className="text-sm text-muted-foreground">
-              Email: support@scanmart.app
+              Email: {siteConfig.contact.email}
             </p>
           </div>
         </div>
 
+        {/* Developer Section */}
         <div className="mt-12 border-t border-border pt-8">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-6">
+            <p className="text-sm text-muted-foreground">App Developed by</p>
+            <div className="flex items-center gap-4">
+              <div className="relative h-12 w-12 overflow-hidden rounded-full border-2 border-primary/20">
+                <Image
+                  src={siteConfig.developer.image}
+                  alt={siteConfig.developer.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-foreground">
+                  {siteConfig.developer.name}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {siteConfig.developer.role}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {developerSocialLinks.map((social) => (
+                <Link
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-muted transition-colors hover:bg-primary hover:text-primary-foreground"
+                  aria-label={`Developer ${social.label}`}
+                >
+                  <social.icon className="h-4 w-4" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <div className="mt-8 border-t border-border pt-8">
           <p className="text-center text-sm text-muted-foreground">
-            © 2026 ScanMart. All rights reserved.
+            © {new Date().getFullYear()} ScanMart. All rights reserved.
           </p>
         </div>
       </div>

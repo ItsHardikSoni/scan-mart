@@ -20,6 +20,7 @@ export {
   organizationSchema,
   websiteSchema,
   softwareAppSchema,
+  developerSchema,
   // Home Page Schemas
   homeFaqSchema,
   homeHowToSchema,
