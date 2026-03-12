@@ -1,58 +1,90 @@
-"use client"
+import type { Metadata } from "next"
+import { ContactForm } from "@/components/contact/contact-form"
 
-import { useState } from "react"
-import { Mail, MapPin, Phone, Send, Twitter, Instagram, Linkedin, Facebook } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Field, FieldLabel, FieldGroup } from "@/components/ui/field"
+export const metadata: Metadata = {
+  title: "Contact Us - Get in Touch with ScanMart",
+  description: "Have questions about ScanMart? Contact our team for support, partnerships, or general inquiries. We are here to help you with your self-checkout needs.",
+  keywords: [
+    'contact scanmart',
+    'scanmart support',
+    'self-checkout help',
+    'customer service',
+    'partnership inquiries',
+    'retail app support'
+  ],
+  alternates: {
+    canonical: '/contact',
+  },
+  openGraph: {
+    title: 'Contact ScanMart - We Would Love to Hear From You',
+    description: 'Get in touch with the ScanMart team for support, partnerships, or general inquiries.',
+    url: '/contact',
+    type: 'website',
+    images: [
+      {
+        url: '/og-contact.png',
+        width: 1200,
+        height: 630,
+        alt: 'Contact ScanMart',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact ScanMart',
+    description: 'Have questions? Get in touch with our team.',
+    images: ['/og-contact.png'],
+  },
+}
 
-const contactInfo = [
-  {
-    icon: Mail,
-    label: "Email",
-    value: "support@scanmart.app",
-    href: "mailto:support@scanmart.app",
+// JSON-LD for Contact Page (ContactPage Schema)
+const contactSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ContactPage',
+  name: 'Contact ScanMart',
+  description: 'Get in touch with the ScanMart team',
+  mainEntity: {
+    '@type': 'Organization',
+    name: 'ScanMart',
+    email: 'support@scanmart.app',
+    telephone: '+1-555-123-4567',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'San Francisco',
+      addressRegion: 'CA',
+      addressCountry: 'US',
+    },
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        email: 'support@scanmart.app',
+        telephone: '+1-555-123-4567',
+        availableLanguage: ['English'],
+      },
+      {
+        '@type': 'ContactPoint',
+        contactType: 'sales',
+        email: 'partnerships@scanmart.app',
+      },
+    ],
+    sameAs: [
+      'https://twitter.com/scanmart',
+      'https://facebook.com/scanmart',
+      'https://linkedin.com/company/scanmart',
+      'https://instagram.com/scanmart',
+    ],
   },
-  {
-    icon: Phone,
-    label: "Phone",
-    value: "+1 (555) 123-4567",
-    href: "tel:+15551234567",
-  },
-  {
-    icon: MapPin,
-    label: "Location",
-    value: "San Francisco, CA",
-    href: "#",
-  },
-]
-
-const socialLinks = [
-  { href: "#", icon: Twitter, label: "Twitter" },
-  { href: "#", icon: Instagram, label: "Instagram" },
-  { href: "#", icon: Linkedin, label: "LinkedIn" },
-  { href: "#", icon: Facebook, label: "Facebook" },
-]
+}
 
 export default function ContactPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    
-    setIsSubmitting(false)
-    setSubmitted(true)
-  }
-
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
+      />
+      
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-background py-20 md:py-28">
         <div className="absolute inset-0 -z-10">
@@ -70,159 +102,13 @@ export default function ContactPage() {
               <span className="text-primary"> Us</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground md:text-xl">
-              Have questions about ScanMart? We'd love to hear from you. Get in touch and we'll respond as soon as possible.
+              Have questions about ScanMart? We&apos;d love to hear from you. Get in touch and we&apos;ll respond as soon as possible.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section className="bg-muted/30 py-20 md:py-28">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid gap-12 lg:grid-cols-2">
-            {/* Contact Form */}
-            <Card className="border-none bg-card shadow-xl">
-              <CardContent className="p-8">
-                <h2 className="text-2xl font-bold text-foreground">Send us a Message</h2>
-                <p className="mt-2 text-muted-foreground">
-                  Fill out the form below and we'll get back to you shortly.
-                </p>
-
-                {submitted ? (
-                  <div className="mt-8 rounded-lg bg-green-50 p-6 text-center">
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                      <Send className="h-6 w-6 text-green-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-green-800">Message Sent!</h3>
-                    <p className="mt-2 text-green-700">
-                      Thank you for reaching out. We'll get back to you soon.
-                    </p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="mt-8">
-                    <FieldGroup>
-                      <Field>
-                        <FieldLabel htmlFor="name">Name</FieldLabel>
-                        <Input
-                          id="name"
-                          type="text"
-                          placeholder="Your name"
-                          required
-                          className="mt-2"
-                        />
-                      </Field>
-
-                      <Field>
-                        <FieldLabel htmlFor="email">Email</FieldLabel>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="your@email.com"
-                          required
-                          className="mt-2"
-                        />
-                      </Field>
-
-                      <Field>
-                        <FieldLabel htmlFor="message">Message</FieldLabel>
-                        <Textarea
-                          id="message"
-                          placeholder="How can we help you?"
-                          rows={5}
-                          required
-                          className="mt-2 resize-none"
-                        />
-                      </Field>
-
-                      <Button
-                        type="submit"
-                        className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          "Sending..."
-                        ) : (
-                          <>
-                            Send Message
-                            <Send className="h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
-                    </FieldGroup>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Contact Info */}
-            <div className="space-y-8">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">Get in Touch</h2>
-                <p className="mt-2 text-muted-foreground">
-                  We're here to help and answer any questions you might have.
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                {contactInfo.map((info) => (
-                  <a
-                    key={info.label}
-                    href={info.href}
-                    className="flex items-start gap-4 rounded-lg bg-card p-4 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                  >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary">
-                      <info.icon className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{info.label}</p>
-                      <p className="text-muted-foreground">{info.value}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-
-              {/* Social Links */}
-              <div>
-                <h3 className="mb-4 font-semibold text-foreground">Follow Us</h3>
-                <div className="flex gap-4">
-                  {socialLinks.map((social) => (
-                    <a
-                      key={social.label}
-                      href={social.href}
-                      className="flex h-12 w-12 items-center justify-center rounded-full bg-muted transition-all duration-300 hover:bg-primary hover:text-primary-foreground"
-                      aria-label={social.label}
-                    >
-                      <social.icon className="h-5 w-5" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-
-              {/* Notify Me Section */}
-              <Card className="border-none bg-primary shadow-lg">
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-primary-foreground">
-                    Get Notified on Launch
-                  </h3>
-                  <p className="mt-2 text-sm text-primary-foreground/80">
-                    Be the first to know when ScanMart launches in your area.
-                  </p>
-                  <div className="mt-4 flex gap-2">
-                    <Input
-                      type="email"
-                      placeholder="Enter your email"
-                      className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60"
-                    />
-                    <Button variant="secondary" className="shrink-0">
-                      Notify Me
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ContactForm />
     </>
   )
 }

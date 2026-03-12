@@ -1,10 +1,64 @@
-import { Metadata } from "next"
+import type { Metadata } from "next"
 import { Target, Eye, Lightbulb, Users, Rocket, Heart } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export const metadata: Metadata = {
-  title: "About - ScanMart",
-  description: "Learn about ScanMart's mission to revolutionize the retail shopping experience with mobile self-checkout technology.",
+  title: "About Us - Our Mission to Transform Retail Shopping",
+  description: "Learn about ScanMart's mission to revolutionize retail shopping. We're eliminating checkout queues with innovative mobile self-checkout technology for a faster, smarter shopping experience.",
+  keywords: [
+    'about scanmart',
+    'retail technology company',
+    'self-checkout innovation',
+    'shopping app company',
+    'mobile checkout startup',
+    'retail innovation',
+    'queue-free shopping mission'
+  ],
+  alternates: {
+    canonical: '/about',
+  },
+  openGraph: {
+    title: 'About ScanMart - Revolutionizing Retail Shopping',
+    description: 'Discover our mission to eliminate checkout queues and transform the supermarket shopping experience.',
+    url: '/about',
+    type: 'website',
+    images: [
+      {
+        url: '/og-about.png',
+        width: 1200,
+        height: 630,
+        alt: 'About ScanMart',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About ScanMart - Our Mission & Vision',
+    description: 'Learn how we are transforming the future of retail shopping.',
+    images: ['/og-about.png'],
+  },
+}
+
+// JSON-LD for About Page (AboutPage Schema)
+const aboutSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  name: 'About ScanMart',
+  description: 'Learn about ScanMart mission to revolutionize the retail shopping experience',
+  mainEntity: {
+    '@type': 'Organization',
+    name: 'ScanMart',
+    description: 'ScanMart is a smart self-checkout solution that allows customers to scan products, pay instantly, and exit the store without waiting in billing queues.',
+    foundingDate: '2024',
+    slogan: 'Scan. Shop. Go. Skip the Queue',
+    knowsAbout: [
+      'Self-checkout technology',
+      'Mobile payment solutions',
+      'Retail innovation',
+      'Barcode scanning',
+      'Contactless payments',
+    ],
+  },
 }
 
 const values = [
@@ -33,6 +87,10 @@ const values = [
 export default function AboutPage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutSchema) }}
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-background py-20 md:py-28">
         <div className="absolute inset-0 -z-10">
