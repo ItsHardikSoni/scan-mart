@@ -13,9 +13,13 @@ export const baseMetadata: Metadata = {
   description: siteConfig.description,
   generator: 'Next.js',
   applicationName: siteConfig.name,
+  referrer: 'origin-when-cross-origin',
   keywords: siteConfig.keywords,
-  authors: [{ name: siteConfig.creator, url: siteConfig.url }],
-  creator: siteConfig.name,
+  authors: [
+    { name: siteConfig.creator, url: siteConfig.url },
+    { name: siteConfig.developer.name, url: siteConfig.developer.social.portfolio },
+  ],
+  creator: siteConfig.developer.name,
   publisher: siteConfig.name,
   formatDetection: {
     email: false,
@@ -24,6 +28,9 @@ export const baseMetadata: Metadata = {
   },
   alternates: {
     canonical: '/',
+    languages: {
+      'en-US': '/',
+    },
   },
   openGraph: {
     type: 'website',
@@ -40,6 +47,13 @@ export const baseMetadata: Metadata = {
         alt: `${siteConfig.name} - Smart Self-Checkout App`,
         type: 'image/png',
       },
+      {
+        url: '/og-image-square.png',
+        width: 600,
+        height: 600,
+        alt: `${siteConfig.name} Logo`,
+        type: 'image/png',
+      },
     ],
   },
   twitter: {
@@ -48,7 +62,10 @@ export const baseMetadata: Metadata = {
     description: 'Smart self-checkout solution for supermarkets. Scan products, pay instantly, and skip the queue.',
     site: siteConfig.twitterHandle,
     creator: siteConfig.twitterHandle,
-    images: [siteConfig.ogImage],
+    images: {
+      url: siteConfig.ogImage,
+      alt: `${siteConfig.name} - Smart Self-Checkout App`,
+    },
   },
   robots: {
     index: true,
@@ -57,6 +74,7 @@ export const baseMetadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
+      noimageindex: false,
       'max-video-preview': -1,
       'max-image-preview': 'large',
       'max-snippet': -1,
@@ -64,9 +82,11 @@ export const baseMetadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
     ],
     shortcut: '/favicon.ico',
     apple: [
@@ -78,6 +98,15 @@ export const baseMetadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   category: 'technology',
+  classification: 'Business/Retail Technology',
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-title': siteConfig.name,
+    'msapplication-TileColor': '#6A1B9A',
+    'msapplication-config': '/browserconfig.xml',
+  },
 }
 
 // ============================================

@@ -9,7 +9,8 @@ import {
   baseViewport,
   organizationSchema, 
   websiteSchema, 
-  softwareAppSchema 
+  softwareAppSchema,
+  developerSchema
 } from '@/lib/seo'
 
 const poppins = Poppins({ 
@@ -30,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <head>
-        <JsonLd schema={[organizationSchema, websiteSchema, softwareAppSchema]} />
+        <JsonLd schema={[organizationSchema, websiteSchema, softwareAppSchema, developerSchema]} />
       </head>
       <body className={`${poppins.variable} font-sans antialiased`}>
         <Navbar />

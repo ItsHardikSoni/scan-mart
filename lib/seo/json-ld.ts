@@ -460,3 +460,35 @@ export const contactBreadcrumbSchema = generateBreadcrumbSchema([
   { name: 'Home', url: '/' },
   { name: 'Contact', url: '/contact' },
 ])
+
+/**
+ * Developer/Creator Schema
+ * Provides structured data about the app developer
+ */
+export const developerSchema: JsonLdSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  '@id': `${siteConfig.developer.social.portfolio}/#person`,
+  name: siteConfig.developer.name,
+  jobTitle: siteConfig.developer.role,
+  description: siteConfig.developer.bio,
+  image: `${siteConfig.url}${siteConfig.developer.image}`,
+  url: siteConfig.developer.social.portfolio,
+  sameAs: [
+    siteConfig.developer.social.instagram,
+    siteConfig.developer.social.twitter,
+    siteConfig.developer.social.github,
+    siteConfig.developer.social.portfolio,
+  ],
+  worksFor: {
+    '@id': `${siteConfig.url}/#organization`,
+  },
+  knowsAbout: [
+    'Web Development',
+    'Mobile App Development',
+    'Full Stack Development',
+    'React',
+    'Next.js',
+    'TypeScript',
+  ],
+}
