@@ -4,6 +4,7 @@ import './globals.css'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { JsonLd } from '@/components/seo/json-ld'
+import ScrollToTop from '@/components/scroll-to-top'
 import { 
   baseMetadata, 
   baseViewport,
@@ -74,7 +75,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#6A1B9A" />
         
         {/* Canonical URL */}
-        <link rel="canonical" href="https://scanmart.app/" />
+        {/* <link rel="canonical" href="https://scanmart.app/" /> */}
         
         {/* Manifest */}
         <link rel="manifest" href="/site.webmanifest" />
@@ -84,6 +85,7 @@ export default function RootLayout({
       </head>
       <body className={`${poppins.variable} font-sans antialiased`}>
         <Navbar />
+        <ScrollToTop />
         <main>{children}</main>
         <Footer />
         <Analytics />

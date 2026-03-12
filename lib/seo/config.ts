@@ -40,15 +40,15 @@ export const siteConfig = {
   
   // Developer Information
   developer: {
-    name: 'Hardik Soni',
-    role: 'Full Stack Developer',
-    image: '/developer.jpg',
+    name: 'Ayush',
+    role: 'Developer',
+    image: '/m3.webp  ',
     bio: 'Passionate developer creating innovative solutions for modern retail experiences.',
     social: {
-      instagram: 'https://instagram.com/itshardiktech',
-      twitter: 'https://twitter.com/itshardiktech',
+      instagram: 'https://instagram.com/its.hardiksoni',
+      twitter: 'https://x.com/imHardikSoni',
       github: 'https://github.com/ItsHardikSoni',
-      portfolio: 'https://hardiks.tech',
+      portfolio: 'https://developerayush.me',
     },
   },
 }

@@ -5,7 +5,7 @@ import { Smartphone, ScanBarcode, ShoppingCart, ArrowRight } from "lucide-react"
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-background py-20 md:py-32">
+    <section className="relative overflow-hidden bg-background py-20 md:py-20">
       {/* Background gradient */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
@@ -27,7 +27,7 @@ export function HeroSection() {
             <div className="space-y-4">
               <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
                 <span className="text-primary">Scan.</span>{" "}
-                <span className="text-secondary-foreground">Shop.</span>{" "}
+                <span className="text-secondary">Shop.</span>{" "}
                 <span className="text-primary">Go.</span>
               </h1>
               <p className="text-xl font-medium text-muted-foreground md:text-2xl">
@@ -56,7 +56,7 @@ export function HeroSection() {
           </div>
 
           {/* Illustration */}
-          <div className="relative flex items-center justify-center lg:justify-end">
+          <div className="relative flex items-center justify-center lg:justify-center">
             <div className="relative">
               {/* Phone mockup */}
               <div className="relative z-10 rounded-[3rem] border-8 border-foreground/10 bg-card p-4 shadow-2xl">
@@ -85,10 +85,10 @@ export function HeroSection() {
               </div>
 
               {/* Floating elements */}
-              <div className="absolute -left-8 top-20 animate-bounce rounded-xl bg-secondary p-3 shadow-lg">
+              <div className="absolute -left-12 top-20 animate-bounce rounded-xl bg-secondary p-3 shadow-lg">
                 <Smartphone className="h-6 w-6 text-secondary-foreground" />
               </div>
-              <div className="absolute -right-4 bottom-32 animate-pulse rounded-xl bg-primary p-3 shadow-lg">
+              <div className="absolute -right-12 bottom-32 animate-pulse rounded-xl bg-primary p-3 shadow-lg">
                 <ArrowRight className="h-6 w-6 text-primary-foreground" />
               </div>
             </div>

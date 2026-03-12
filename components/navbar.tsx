@@ -93,9 +93,11 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex">
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Get Notified
-          </Button>
+          <Link href="/feedback">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+              Feedback
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -142,9 +144,11 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Button className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
-            Get Notified
-          </Button>
+          <Link href="/feedback" onClick={() => setIsOpen(false)}>
+            <Button className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
+              Feedback
+            </Button>
+          </Link>
         </div>
       </div>
     </header>

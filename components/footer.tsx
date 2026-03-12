@@ -110,7 +110,7 @@ export function Footer() {
         {/* Developer Section */}
         <div className="mt-12 border-t border-border pt-8">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-6">
-            <p className="text-sm text-muted-foreground">App Developed by</p>
+            <p className="text-sm text-muted-foreground">Developed by</p>
             <div className="flex items-center gap-4">
               <div className="relative h-12 w-12 overflow-hidden rounded-full border-2 border-primary/20">
                 <Image
