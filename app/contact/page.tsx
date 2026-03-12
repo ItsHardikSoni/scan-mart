@@ -1,89 +1,14 @@
-import type { Metadata } from "next"
 import { ContactForm } from "@/components/contact/contact-form"
+import { JsonLd } from "@/components/seo/json-ld"
+import { contactMetadata, contactPageSchema, contactBreadcrumbSchema } from "@/lib/seo"
 
-export const metadata: Metadata = {
-  title: "Contact Us - Get in Touch with ScanMart",
-  description: "Have questions about ScanMart? Contact our team for support, partnerships, or general inquiries. We are here to help you with your self-checkout needs.",
-  keywords: [
-    'contact scanmart',
-    'scanmart support',
-    'self-checkout help',
-    'customer service',
-    'partnership inquiries',
-    'retail app support'
-  ],
-  alternates: {
-    canonical: '/contact',
-  },
-  openGraph: {
-    title: 'Contact ScanMart - We Would Love to Hear From You',
-    description: 'Get in touch with the ScanMart team for support, partnerships, or general inquiries.',
-    url: '/contact',
-    type: 'website',
-    images: [
-      {
-        url: '/og-contact.png',
-        width: 1200,
-        height: 630,
-        alt: 'Contact ScanMart',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Contact ScanMart',
-    description: 'Have questions? Get in touch with our team.',
-    images: ['/og-contact.png'],
-  },
-}
-
-// JSON-LD for Contact Page (ContactPage Schema)
-const contactSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'ContactPage',
-  name: 'Contact ScanMart',
-  description: 'Get in touch with the ScanMart team',
-  mainEntity: {
-    '@type': 'Organization',
-    name: 'ScanMart',
-    email: 'support@scanmart.app',
-    telephone: '+1-555-123-4567',
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: 'San Francisco',
-      addressRegion: 'CA',
-      addressCountry: 'US',
-    },
-    contactPoint: [
-      {
-        '@type': 'ContactPoint',
-        contactType: 'customer support',
-        email: 'support@scanmart.app',
-        telephone: '+1-555-123-4567',
-        availableLanguage: ['English'],
-      },
-      {
-        '@type': 'ContactPoint',
-        contactType: 'sales',
-        email: 'partnerships@scanmart.app',
-      },
-    ],
-    sameAs: [
-      'https://twitter.com/scanmart',
-      'https://facebook.com/scanmart',
-      'https://linkedin.com/company/scanmart',
-      'https://instagram.com/scanmart',
-    ],
-  },
-}
+// Export metadata from centralized SEO files
+export const metadata = contactMetadata
 
 export default function ContactPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
-      />
+      <JsonLd schema={[contactPageSchema, contactBreadcrumbSchema]} />
       
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-background py-20 md:py-28">
