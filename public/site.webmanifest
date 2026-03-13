@@ -7,20 +7,11 @@
   "background_color": "#ffffff",
   "theme_color": "#6A1B9A",
   "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "/android-chrome-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/android-chrome-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
+  "icons": [],
+  "categories": [
+    "shopping",
+    "business",
+    "utilities"
   ],
-  "categories": ["shopping", "business", "utilities"],
   "lang": "en-US"
 }

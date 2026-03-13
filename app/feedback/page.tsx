@@ -101,56 +101,101 @@ export default function FeedbackPage() {
     setFieldErrors((p) => ({ ...p, [field]: '' }))
   }
 
-  function validateAll(): { valid: boolean; missing: string[] } {
-    const missing: string[] = []
+  function validateAll(): { valid: boolean; errors: Record<string, string> } {
+    const errorsMap: Record<string, string> = {}
 
-    // Text / single-value fields
-    const textFields = ['name', 'gender', 'ageGroup', 'occupation', 'city', 'state', 'contact', 'email', 'visitFreq', 'waitTime', 'queuesFrustrate', 'wouldUse', 'comfortLevel', 'trustPayment', 'earlyAccess']
-    for (const k of textFields) {
-      if (!form[k] && form[k] !== 0) missing.push(k)
+    // Check required fields
+    const requiredFields = [
+      'name', 'gender', 'ageGroup', 'occupation', 'city', 'state',
+      'contact', 'email', 'visitFreq', 'waitTime', 'queuesFrustrate',
+      'wouldUse', 'comfortLevel', 'trustPayment', 'earlyAccess'
+    ]
+
+    for (const k of requiredFields) {
+      if (!form[k] && form[k] !== 0) {
+        errorsMap[k] = `${fieldLabels[k] || k} is required.`
+      }
     }
 
-    // Checkbox groups must have at least one selected
-    if (!form.usefulFeatures || form.usefulFeatures.length === 0) missing.push('usefulFeatures')
-    if (!form.preferredPayments || form.preferredPayments.length === 0) missing.push('preferredPayments')
+    // Regex Validation
+    const phoneRegex = /^(\+91[\-\s]?)?[6-9]\d{9}$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-    // Feature suggestions and concerns
-    if (!form.featureSuggestions) missing.push('featureSuggestions')
-    if (!form.concerns) missing.push('concerns')
+    if (form.contact && !phoneRegex.test(form.contact)) {
+      errorsMap.contact = 'Please enter a valid 10-digit Indian phone number (starting 6-9).'
+    }
+
+    if (form.email && !emailRegex.test(form.email)) {
+      errorsMap.email = 'Please enter a valid email address.'
+    }
+
+    // Checkbox groups
+    if (!form.usefulFeatures || form.usefulFeatures.length === 0) {
+      errorsMap.usefulFeatures = 'Please select at least one option.'
+    }
+    if (!form.preferredPayments || form.preferredPayments.length === 0) {
+      errorsMap.preferredPayments = 'Please select at least one option.'
+    }
+
+    // Multi-line text
+    if (!form.featureSuggestions) errorsMap.featureSuggestions = 'Feature suggestions is required.'
+    if (!form.concerns) errorsMap.concerns = 'Concerns is required.'
 
     // earlyEmail required only if earlyAccess === 'Yes'
-    if (form.earlyAccess === 'Yes' && !form.earlyEmail) missing.push('earlyEmail')
+    if (form.earlyAccess === 'Yes' && !form.earlyEmail) {
+      errorsMap.earlyEmail = 'Early access email is required.'
+    } else if (form.earlyEmail && !emailRegex.test(form.earlyEmail)) {
+      errorsMap.earlyEmail = 'Please enter a valid email address.'
+    }
 
-    return { valid: missing.length === 0, missing }
+    return { valid: Object.keys(errorsMap).length === 0, errors: errorsMap }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const { valid, missing } = validateAll()
+
+    const { valid, errors } = validateAll()
+
     if (!valid) {
-      // Build per-field error messages
-      const errorsMap: Record<string, string> = {}
-      for (const k of missing) {
-        if (k === 'usefulFeatures' || k === 'preferredPayments') {
-          errorsMap[k] = 'Please select at least one option.'
-        } else {
-          errorsMap[k] = `${fieldLabels[k] || k} is required.`
-        }
-      }
-      setFieldErrors(errorsMap)
+      setFieldErrors(errors)
 
       // focus the first missing field
-      if (typeof window !== 'undefined' && missing.length > 0) {
-        const sel = document.querySelector(`[name="${missing[0]}"]`) as HTMLElement | null
+      const firstError = Object.keys(errors)[0]
+      if (typeof window !== 'undefined' && firstError) {
+        const sel = document.querySelector(`[name="${firstError}"]`) as HTMLElement | null
         if (sel && typeof sel.focus === 'function') sel.focus()
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
       return
     }
 
-    // In a real app: POST to an API route here
-    console.log('feedback submit', form)
-    setSubmitted(true)
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...form,
+          usefulFeatures: form.usefulFeatures.join(", "),
+          preferredPayments: form.preferredPayments.join(", "),
+          createdAt: new Date()
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        console.log('feedback stored successfully')
+        setSubmitted(true)
+      } else {
+        alert('Failed to submit feedback')
+      }
+
+    } catch (error) {
+      console.error('Submission error:', error)
+      alert('Something went wrong. Please try again.')
+    }
   }
 
   if (submitted) {
@@ -161,9 +206,9 @@ export default function FeedbackPage() {
           <p>Your feedback helps us build a smarter and faster shopping experience.</p>
           <p className="mt-6">ScanMart — Scan. Shop. Go. – Skip the Queue</p>
           <div className="mt-6">
-            <Link href="/">
-              <Button>Back to home</Button>
-            </Link>
+            <Button asChild>
+              <Link href="/">Back to home</Link>
+            </Button>
           </div>
         </div>
       </div>

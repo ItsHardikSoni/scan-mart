@@ -35,9 +35,9 @@ export function Navbar() {
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
-      
+
       if (
-        menuRef.current && 
+        menuRef.current &&
         !menuRef.current.contains(target) &&
         buttonRef.current &&
         !buttonRef.current.contains(target)
@@ -93,11 +93,11 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex">
-          <Link href="/feedback">
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/feedback">
               Feedback
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         {/* Mobile Menu Button */}
@@ -118,7 +118,7 @@ export function Navbar() {
 
       {/* Mobile Navigation Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 top-16 z-40 bg-foreground/20 backdrop-blur-sm md:hidden"
           aria-hidden="true"
         />
@@ -127,11 +127,10 @@ export function Navbar() {
       {/* Mobile Navigation */}
       <div
         ref={menuRef}
-        className={`fixed left-0 right-0 top-16 z-50 border-b border-border bg-background shadow-lg transition-all duration-300 ease-in-out md:hidden ${
-          isOpen 
-            ? 'translate-y-0 opacity-100' 
+        className={`fixed left-0 right-0 top-16 z-50 border-b border-border bg-background shadow-lg transition-all duration-300 ease-in-out md:hidden ${isOpen
+            ? 'translate-y-0 opacity-100'
             : '-translate-y-full opacity-0 pointer-events-none'
-        }`}
+          }`}
       >
         <div className="container mx-auto flex flex-col gap-4 px-4 py-6">
           {navLinks.map((link) => (
@@ -144,11 +143,11 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          <Link href="/feedback" onClick={() => setIsOpen(false)}>
-            <Button className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button asChild className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/feedback" onClick={() => setIsOpen(false)}>
               Feedback
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     </header>
