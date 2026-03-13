@@ -5,26 +5,36 @@ const flowSteps = [
     icon: UserCheck,
     title: "Login / Signup",
     description: "Secure authentication with email or phone verification.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: ScanBarcode,
     title: "Scan Products",
     description: "Instantly scan barcodes with your phone camera.",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
   {
     icon: ShoppingCart,
     title: "View Cart",
     description: "Real-time cart and running total display.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: CreditCard,
     title: "Process Payment",
     description: "Secure checkout via Razorpay gateway.",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
   {
     icon: FileText,
     title: "Get Invoice",
     description: "Download digital receipt and exit store.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
 ]
 
@@ -53,9 +63,8 @@ export function UserFlowSection() {
               {flowSteps.map((step, index) => (
                 <div
                   key={step.title}
-                  className={`relative flex flex-col items-center gap-8 md:flex-row ${
-                    index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                  }`}
+                  className={`relative flex flex-col items-center gap-8 md:flex-row ${index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
+                    }`}
                 >
                   {/* Content */}
                   <div className={`flex-1 ${index % 2 === 0 ? "md:text-right" : "md:text-left"}`}>
@@ -70,8 +79,8 @@ export function UserFlowSection() {
                   </div>
 
                   {/* Icon */}
-                  <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-4 border-background bg-primary shadow-lg">
-                    <step.icon className="h-8 w-8 text-primary-foreground" />
+                  <div className={`relative z-10 mb-6 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${step.color} shadow-lg transition-transform duration-300 hover:scale-110`}>
+                    <step.icon className={`h-8 w-8 ${step.textColor}`} />
                     <div className="absolute -bottom-8 text-sm font-bold text-primary">
                       {String(index + 1).padStart(2, "0")}
                     </div>

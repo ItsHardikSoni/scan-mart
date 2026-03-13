@@ -6,21 +6,29 @@ const customerFeatures = [
     icon: ScanBarcode,
     title: "Barcode Scanning",
     description: "Instantly scan product barcodes using your smartphone camera with high accuracy and speed.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: ShoppingCart,
     title: "Cart Management",
     description: "Add, remove, and modify items in your cart with real-time quantity and price updates.",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
   {
     icon: Receipt,
     title: "Real-Time Billing",
     description: "See your running total as you shop with instant price calculations and tax breakdown.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: CreditCard,
     title: "Online Payment",
     description: "Secure payment processing through Razorpay with multiple payment options available.",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
 ]
 
@@ -47,8 +55,8 @@ export function CustomerAppSection() {
               className="group border-none bg-card shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
               <CardContent className="p-6">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
-                  <feature.icon className="h-6 w-6" />
+                <div className={`relative z-10 mb-6 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${feature.color} shadow-lg transition-all duration-300 group-hover:scale-110`}>
+                  <feature.icon className={`h-6 w-6 ${feature.textColor}`} />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold text-foreground">
                   {feature.title}

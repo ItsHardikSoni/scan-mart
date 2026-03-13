@@ -12,20 +12,26 @@ const contactInfo = [
   {
     icon: Mail,
     label: "Email",
-    value: "support@scanmart.app",
-    href: "mailto:support@scanmart.app",
+    value: "hardiksoni019@gmail.com",
+    href: "mailto:hardiksoni019@gmail.com",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: Phone,
     label: "Phone",
-    value: "+1 (555) 123-4567",
+    value: "+91-9661850789",
     href: "tel:+15551234567",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
   {
     icon: MapPin,
     label: "Location",
-    value: "San Francisco, CA",
+    value: "Patna, Bihar, India",
     href: "#",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white" 
   },
 ]
 
@@ -145,8 +151,8 @@ export function ContactForm() {
                   href={info.href}
                   className="flex items-start gap-4 rounded-lg bg-card p-4 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary">
-                    <info.icon className="h-6 w-6 text-primary-foreground" />
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${info.color}`}>
+                    <info.icon className={`${info.textColor} h-6 w-6`} />
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{info.label}</p>

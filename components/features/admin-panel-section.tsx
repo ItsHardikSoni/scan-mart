@@ -6,21 +6,29 @@ const adminFeatures = [
     icon: Package,
     title: "Product Management",
     description: "Easily add, update, and manage product catalog with bulk import support.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: Database,
     title: "CRUD Operations",
     description: "Full create, read, update, delete functionality for all store data.",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
   {
     icon: BarChart3,
     title: "Inventory Tracking",
     description: "Real-time inventory monitoring with low stock alerts and reports.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: MapPin,
     title: "Location-Based Access",
     description: "Control store boundaries for geo-fenced app functionality.",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
 ]
 
@@ -47,8 +55,8 @@ export function AdminPanelSection() {
               className="group overflow-hidden border-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
               <CardContent className="flex items-start gap-6 p-6">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-secondary transition-transform duration-300 group-hover:scale-110">
-                  <feature.icon className="h-7 w-7 text-secondary-foreground" />
+                <div className={`relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${feature.color} shadow-lg transition-transform duration-300 group-hover:scale-110`}>
+                  <feature.icon className={`h-7 w-7 ${feature.textColor}`} />
                 </div>
                 <div>
                   <h3 className="mb-2 text-xl font-semibold text-foreground">

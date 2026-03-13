@@ -11,21 +11,29 @@ const values = [
     icon: Lightbulb,
     title: "Innovation",
     description: "Constantly pushing boundaries to create cutting-edge solutions.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: Users,
     title: "Customer Focus",
     description: "Every feature is designed with the customer experience in mind.",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
   {
     icon: Rocket,
     title: "Efficiency",
     description: "Streamlining processes to save time for everyone.",
+    color: "bg-primary dark:bg-primary",
+    textColor: "text-white dark:text-white"
   },
   {
     icon: Heart,
     title: "Quality",
     description: "Committed to delivering excellence in every interaction.",
+    color: "bg-secondary dark:bg-secondary",
+    textColor: "text-black dark:text-black"
   },
 ]
 
@@ -96,7 +104,7 @@ export default function AboutPage() {
               <Card className="border-none bg-card shadow-lg">
                 <CardContent className="p-6">
                   <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-secondary">
-                    <Eye className="h-6 w-6 text-secondary-foreground" />
+                    <Eye className="h-6 w-6 text-black dark:text-black" />
                   </div>
                   <h3 className="mb-2 text-lg font-semibold text-foreground">Vision</h3>
                   <p className="text-sm text-muted-foreground">
@@ -127,8 +135,8 @@ export default function AboutPage() {
           <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {values.map((value) => (
               <div key={value.title} className="group text-center">
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition-all duration-300 group-hover:bg-primary group-hover:scale-110">
-                  <value.icon className="h-8 w-8 text-primary transition-colors group-hover:text-primary-foreground" />
+                <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${value.color} transition-all duration-300 group-hover:scale-110`}>
+                  <value.icon className={`h-8 w-8 ${value.textColor}`} />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold text-foreground">
                   {value.title}

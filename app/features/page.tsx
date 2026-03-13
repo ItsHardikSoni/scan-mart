@@ -15,11 +15,11 @@ import FeatureCards from '@/components/features/feature-cards'
 import ArchitectureSection from '@/components/features/architecture-section'
 import ComingSoonCTA from '@/components/features/coming-soon-cta'
 import { JsonLd } from "@/components/seo/json-ld"
-import { 
-  featuresMetadata, 
-  featuresListSchema, 
+import {
+  featuresMetadata,
+  featuresListSchema,
   featuresServiceSchema,
-  featuresBreadcrumbSchema 
+  featuresBreadcrumbSchema
 } from "@/lib/seo"
 
 // Export metadata from centralized SEO files
@@ -33,18 +33,18 @@ export default function FeaturesPage() {
       <CustomerAppSection />
       <SecurityLayerSection />
       <AdminPanelSection />
-  <UserFlowSection />
-  <MultiVendorSection />
-  <VendorStoreConfigSection />
-  <LocationRestrictedSection />
-  <SmartStoreDetectionSection />
-  <VendorPaymentsSection />
-  <RazorpaySplitSection />
-  <FeatureCards />
-  <BenefitsSection />
-  <VisualsSection />
-  <ArchitectureSection />
-  <ComingSoonCTA />
+      <UserFlowSection />
+      <MultiVendorSection />
+      <VendorStoreConfigSection />
+      <LocationRestrictedSection />
+      <SmartStoreDetectionSection />
+      <VendorPaymentsSection />
+      <RazorpaySplitSection />
+      <FeatureCards />
+      <BenefitsSection />
+      <VisualsSection />
+      <ArchitectureSection />
+      <ComingSoonCTA />
     </>
   )
 }
