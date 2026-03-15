@@ -14,6 +14,32 @@ export {
   contactMetadata,
 } from './metadata'
 
+// Vendor Dashboard Metadata Exports
+export {
+  vendorDashboardMetadata,
+  vendorProductsMetadata,
+  vendorBillingMetadata,
+  vendorOrdersMetadata,
+  vendorSettingsMetadata,
+  // Vendor Apply (public) Metadata
+  vendorApplyMetadata,
+  // Vendor JSON-LD Schemas
+  vendorDashboardWebPageSchema,
+  vendorSoftwareAppSchema,
+  vendorServiceSchema,
+  // Vendor Apply JSON-LD Schemas
+  vendorApplyPageSchema,
+  vendorPartnerProgramSchema,
+  vendorApplyFaqSchema,
+  // Vendor Breadcrumbs
+  vendorDashboardBreadcrumbSchema,
+  vendorProductsBreadcrumbSchema,
+  vendorBillingBreadcrumbSchema,
+  vendorOrdersBreadcrumbSchema,
+  vendorSettingsBreadcrumbSchema,
+  vendorApplyBreadcrumbSchema,
+} from './vendor'
+
 // JSON-LD Schema Exports
 export {
   // Global Schemas
