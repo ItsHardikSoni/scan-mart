@@ -37,8 +37,9 @@ export default function AdminDashboardPage() {
         ]);
 
         if (statusRes.data) {
-            const allOperational = statusRes.data.every((s: any) => s.status === 'Operational');
-            const hasPerformance = statusRes.data.some((s: any) => s.status === 'Performance Issue');
+            const { results } = statusRes.data;
+            const allOperational = results.every((s: any) => s.status === 'Operational');
+            const hasPerformance = results.some((s: any) => s.status === 'Performance Issue');
 
             if (allOperational) {
                 setSystemStatus({ state: 'Operational', label: 'Core Operational' });
@@ -144,17 +145,17 @@ export default function AdminDashboardPage() {
                     <div className="cursor-pointer" onClick={() => window.location.href = '/admin/dashboard/status'}>
                         <p className="text-sm font-medium text-foreground">System Status</p>
                         <p className={`text-xs flex items-center gap-1 font-semibold ${systemStatus.state === 'Operational' ? 'text-primary' :
-                                systemStatus.state === 'Performance' ? 'text-orange-500' :
-                                    'text-destructive'
+                            systemStatus.state === 'Performance' ? 'text-orange-500' :
+                                'text-destructive'
                             }`}>
                             <span className="relative flex h-2 w-2">
                                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${systemStatus.state === 'Operational' ? 'bg-primary' :
-                                        systemStatus.state === 'Performance' ? 'bg-orange-500' :
-                                            'bg-destructive'
+                                    systemStatus.state === 'Performance' ? 'bg-orange-500' :
+                                        'bg-destructive'
                                     }`}></span>
                                 <span className={`relative inline-flex rounded-full h-2 w-2 ${systemStatus.state === 'Operational' ? 'bg-primary' :
-                                        systemStatus.state === 'Performance' ? 'bg-orange-500' :
-                                            'bg-destructive'
+                                    systemStatus.state === 'Performance' ? 'bg-orange-500' :
+                                        'bg-destructive'
                                     }`}></span>
                             </span>
                             {systemStatus.label}

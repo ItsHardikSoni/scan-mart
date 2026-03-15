@@ -38,6 +38,8 @@ export default function SystemStatusPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<string>('');
     const [statusData, setStatusData] = useState<any[]>([]);
+    const [realLogs, setRealLogs] = useState<any[]>([]);
+    const [topologyData, setTopologyData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedSystem, setSelectedSystem] = useState<any>(null);
 
@@ -46,7 +48,9 @@ export default function SystemStatusPage() {
         try {
             const res = await getSystemStatus();
             if (res.data) {
-                setStatusData(res.data);
+                setStatusData(res.data.results);
+                setRealLogs(res.data.logs);
+                setTopologyData(res.data.topology);
                 setLastUpdated(new Date().toLocaleTimeString());
             }
         } catch (error) {
@@ -71,13 +75,6 @@ export default function SystemStatusPage() {
         : 0;
 
     const allOperational = statusData.length > 0 && statusData.every(s => s.status === 'Operational');
-
-    const operationalLogs = [
-        { id: 1, title: 'Supabase Connectivity', status: 'Verified', time: '1 min ago', type: 'System', description: 'Primary database connection pooled and healthy.' },
-        { id: 2, title: 'API Endpoint Optimization', status: 'Completed', time: '15 mins ago', type: 'Maintenance', description: 'Edge caching layers successfully invalidated and updated.' },
-        { id: 3, title: 'Auth Service Latency', status: 'Nominal', time: '42 mins ago', type: 'Performance', description: 'Zero authentication failures reported in the last 10,000 requests.' },
-        { id: 4, title: 'CDN Edge Propagation', status: 'Success', time: '2 hours ago', type: 'Static', description: 'Static assets propagated across 248 global edge locations.' },
-    ];
 
     return (
         <div className="p-6 space-y-8 max-w-7xl mx-auto w-full relative">
@@ -112,21 +109,21 @@ export default function SystemStatusPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className={`border rounded-3xl p-8 relative overflow-hidden group transition-colors duration-500 ${isLoading ? 'bg-muted/10 border-border/50' :
-                        allOperational ? 'bg-green-500/5 border-green-500/20' : 'bg-orange-500/5 border-orange-500/20'
+                    allOperational ? 'bg-green-500/5 border-green-500/20' : 'bg-orange-500/5 border-orange-500/20'
                     }`}
             >
                 <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] -z-10 group-hover:opacity-80 transition-all duration-700 ${isLoading ? 'bg-muted/5' :
-                        allOperational ? 'bg-green-500/10' : 'bg-orange-500/10'
+                    allOperational ? 'bg-green-500/10' : 'bg-orange-500/10'
                     }`} />
                 <div className="flex flex-col md:flex-row items-center gap-8">
                     <div className={`h-24 w-24 rounded-full border-4 flex items-center justify-center relative ${isLoading ? 'bg-muted/10 border-border/20' :
-                            allOperational ? 'bg-green-500/10 border-green-500/20' : 'bg-orange-500/10 border-orange-500/20'
+                        allOperational ? 'bg-green-500/10 border-green-500/20' : 'bg-orange-500/10 border-orange-500/20'
                         }`}>
                         <Activity className={`h-10 w-10 animate-pulse ${isLoading ? 'text-muted-foreground' :
-                                allOperational ? 'text-green-500' : 'text-orange-500'
+                            allOperational ? 'text-green-500' : 'text-orange-500'
                             }`} />
                         <div className={`absolute inset-0 rounded-full border-4 border-t-transparent animate-spin ${isLoading ? 'border-muted-foreground' :
-                                allOperational ? 'border-green-500' : 'border-orange-500'
+                            allOperational ? 'border-green-500' : 'border-orange-500'
                             }`} />
                     </div>
                     <div className="text-center md:text-left space-y-2">
@@ -233,11 +230,28 @@ export default function SystemStatusPage() {
                         </div>
                     </div>
                     <div className="divide-y divide-border/50">
-                        {operationalLogs.map((log) => (
-                            <div key={log.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-muted/10 transition-colors gap-4">
+                        {isLoading ? (
+                            [...Array(3)].map((_, i) => (
+                                <div key={i} className="p-6 animate-pulse flex items-center gap-4">
+                                    <div className="h-10 w-10 rounded-full bg-muted" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 w-32 bg-muted rounded" />
+                                        <div className="h-3 w-full bg-muted rounded" />
+                                    </div>
+                                </div>
+                            ))
+                        ) : realLogs.map((log, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="p-6 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-muted/10 transition-colors gap-4"
+                            >
                                 <div className="flex items-start gap-4">
                                     <div className={`p-2 rounded-full mt-1 ${log.status === 'Verified' || log.status === 'Success' ? 'bg-green-500/10 text-green-500' :
-                                            log.status === 'Nominal' ? 'bg-blue-500/10 text-blue-500' :
+                                        log.status === 'Nominal' ? 'bg-blue-500/10 text-blue-500' :
+                                            log.status === 'Critical' ? 'bg-red-500/10 text-red-500' :
                                                 'bg-primary/10 text-primary'
                                         }`}>
                                         <CheckCircle2 className="h-4 w-4" />
@@ -252,14 +266,15 @@ export default function SystemStatusPage() {
                                 </div>
                                 <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1 shrink-0">
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${log.status === 'Verified' || log.status === 'Success' ? 'bg-green-500/5 border-green-500/20 text-green-500' :
-                                            log.status === 'Nominal' ? 'bg-blue-500/5 border-blue-500/20 text-blue-500' :
+                                        log.status === 'Nominal' ? 'bg-blue-500/5 border-blue-500/20 text-blue-500' :
+                                            log.status === 'Critical' ? 'bg-red-500/5 border-red-500/20 text-red-500' :
                                                 'bg-primary/5 border-primary/20 text-primary'
                                         } uppercase tracking-tight`}>
                                         {log.status}
                                     </span>
                                     <p className="text-[10px] text-muted-foreground font-mono">{log.time}</p>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 </Card>
@@ -273,16 +288,21 @@ export default function SystemStatusPage() {
                         <h3 className="font-bold text-foreground text-sm uppercase tracking-widest">Edge Topology</h3>
                     </div>
                     <div className="p-6 space-y-5">
-                        {[
-                            { name: 'AP-South-1 (Mumbai)', latency: '12ms', load: '14%' },
-                            { name: 'AP-East-1 (Singapore)', latency: '24ms', load: '28%' },
-                            { name: 'EU-Central-1 (Frankfurt)', latency: '118ms', load: '8%' },
-                            { name: 'Global Edge (Cloudflare)', latency: '4ms', load: 'Over 100%' },
-                        ].map((node) => (
+                        {isLoading ? (
+                            [...Array(4)].map((_, i) => (
+                                <div key={i} className="space-y-2 animate-pulse">
+                                    <div className="flex justify-between">
+                                        <div className="h-3 w-32 bg-muted rounded" />
+                                        <div className="h-3 w-10 bg-muted rounded" />
+                                    </div>
+                                    <div className="h-1 bg-muted rounded-full w-full" />
+                                </div>
+                            ))
+                        ) : topologyData.map((node) => (
                             <div key={node.name} className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                                        <div className={`h-1.5 w-1.5 rounded-full bg-green-500 ${node.status === 'Down' ? 'bg-red-500' : 'animate-pulse'}`} />
                                         <span className="text-xs font-bold text-foreground">{node.name}</span>
                                     </div>
                                     <span className="text-[10px] font-mono text-muted-foreground">{node.latency}</span>
@@ -329,7 +349,7 @@ export default function SystemStatusPage() {
                             <div className="p-6 border-b border-border/50 flex items-center justify-between bg-muted/20">
                                 <div className="flex items-center gap-3">
                                     <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${selectedSystem.status === 'Operational' ? 'bg-green-500/10 text-green-500' :
-                                            'bg-orange-500/10 text-orange-500'
+                                        'bg-orange-500/10 text-orange-500'
                                         }`}>
                                         {(() => {
                                             const Icon = iconMap[selectedSystem.name] || Activity;
