@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field"
+import { submitContactMessage } from "@/app/actions/contact"
+import { toast } from "sonner"
 
 const contactInfo = [
   {
@@ -21,7 +23,7 @@ const contactInfo = [
     icon: Phone,
     label: "Phone",
     value: "+91-9661850789",
-    href: "tel:+15551234567",
+    href: "tel:+919661850789",
     color: "bg-secondary dark:bg-secondary",
     textColor: "text-black dark:text-black"
   },
@@ -50,11 +52,24 @@ export function ContactForm() {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const formData = new FormData(e.currentTarget)
+    const data = {
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      subject: formData.get('subject') as string,
+      message: formData.get('message') as string,
+    }
+
+    const res = await submitContactMessage(data)
+
+    if (res.success) {
+      setSubmitted(true)
+      toast.success("Message sent successfully!")
+    } else {
+      toast.error(res.error || "Failed to send message")
+    }
 
     setIsSubmitting(false)
-    setSubmitted(true)
   }
 
   return (
@@ -86,6 +101,7 @@ export function ContactForm() {
                       <FieldLabel htmlFor="name">Name</FieldLabel>
                       <Input
                         id="name"
+                        name="name"
                         type="text"
                         placeholder="Your name"
                         required
@@ -97,8 +113,21 @@ export function ContactForm() {
                       <FieldLabel htmlFor="email">Email</FieldLabel>
                       <Input
                         id="email"
+                        name="email"
                         type="email"
                         placeholder="your@email.com"
+                        required
+                        className="mt-2"
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="subject">Subject</FieldLabel>
+                      <Input
+                        id="subject"
+                        name="subject"
+                        type="text"
+                        placeholder="What's this about?"
                         required
                         className="mt-2"
                       />
@@ -108,6 +137,7 @@ export function ContactForm() {
                       <FieldLabel htmlFor="message">Message</FieldLabel>
                       <Textarea
                         id="message"
+                        name="message"
                         placeholder="How can we help you?"
                         rows={5}
                         required

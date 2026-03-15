@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import {
     IndianRupee,
     Users,
@@ -13,47 +14,112 @@ import {
     Clock,
     Activity,
     ChevronRight,
-    ChevronDown
+    ChevronDown,
+    Loader2
 } from 'lucide-react';
-
-const stats = [
-    {
-        name: 'Total Revenue',
-        value: '₹1.25L',
-        change: '+12.5%',
-        trend: 'up',
-        icon: IndianRupee,
-    },
-    {
-        name: 'Total Vendors',
-        value: '42',
-        change: '+8%',
-        trend: 'up',
-        icon: Store,
-    },
-    {
-        name: 'Pending Tasks',
-        value: '8',
-        change: '-2%',
-        trend: 'down',
-        icon: Clock,
-    },
-    {
-        name: 'User Messages',
-        value: '15',
-        change: '+4%',
-        trend: 'up',
-        icon: MessageSquare,
-    },
-];
-
-const mockRecentVendors = [
-    { id: '1', store_name: 'Metro Mart', email: 'contact@metromart.com', status: 'Pending', created_at: new Date().toISOString() },
-    { id: '2', store_name: 'City Supermarket', email: 'city@super.com', status: 'Approved', created_at: new Date().toISOString() },
-    { id: '3', store_name: 'Green Grocers', email: 'orders@green.com', status: 'Approved', created_at: new Date().toISOString() },
-];
+import { getAdminStats, getRecentVendors, getCurrentAdmin, getSystemStatus } from '@/app/actions/admin';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminDashboardPage() {
+    const [stats, setStats] = useState<any[]>([]);
+    const [recentVendors, setRecentVendors] = useState<any[]>([]);
+    const [admin, setAdmin] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const [systemStatus, setSystemStatus] = useState({ state: 'Operational', label: 'Core Operational' });
+
+    const fetchData = async () => {
+        const [statsRes, vendorsRes, adminRes, statusRes] = await Promise.all([
+            getAdminStats(),
+            getRecentVendors(),
+            getCurrentAdmin(),
+            getSystemStatus()
+        ]);
+
+        if (statusRes.data) {
+            const allOperational = statusRes.data.every((s: any) => s.status === 'Operational');
+            const hasPerformance = statusRes.data.some((s: any) => s.status === 'Performance Issue');
+
+            if (allOperational) {
+                setSystemStatus({ state: 'Operational', label: 'Core Operational' });
+            } else if (hasPerformance) {
+                setSystemStatus({ state: 'Performance', label: 'Performance Alert' });
+            } else {
+                setSystemStatus({ state: 'Disrupted', label: 'Service Disruption' });
+            }
+        }
+
+        if (statsRes.data) {
+            setStats([
+                {
+                    name: 'Total Revenue',
+                    value: statsRes.data.totalRevenue,
+                    change: '+100%',
+                    trend: 'up',
+                    icon: IndianRupee,
+                },
+                {
+                    name: 'Total Vendors',
+                    value: statsRes.data.totalVendors.toString(),
+                    change: '+100%',
+                    trend: 'up',
+                    icon: Store,
+                },
+                {
+                    name: 'Pending Tasks',
+                    value: statsRes.data.pendingTasks.toString(),
+                    change: 'Real-time',
+                    trend: 'up',
+                    icon: Clock,
+                },
+                {
+                    name: 'User Messages',
+                    value: statsRes.data.userMessages.toString(),
+                    change: 'New',
+                    trend: 'up',
+                    icon: MessageSquare,
+                },
+            ]);
+        }
+
+        if (vendorsRes.data) {
+            setRecentVendors(vendorsRes.data);
+        }
+        if (adminRes) {
+            setAdmin(adminRes);
+        }
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        fetchData();
+
+        const channel = supabase
+            .channel('admin-dashboard-realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'vendors' },
+                () => fetchData()
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'vendor_messages' },
+                () => fetchData()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            </div>
+        );
+    }
     return (
         <div className="p-6 space-y-8 max-w-7xl mx-auto w-full">
             {/* Welcome Section - Aligned with Vendor Dashboard */}
@@ -65,7 +131,7 @@ export default function AdminDashboardPage() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] -z-10" />
                 <div>
                     <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                        Welcome back, Admin! <span className="text-lg">🛡️</span>
+                        Welcome back, {admin?.full_name?.split(' ')[0] || 'Admin'}! <span className="text-lg">🛡️</span>
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">
                         Global platform statistics and ecosystem monitoring.
@@ -75,14 +141,23 @@ export default function AdminDashboardPage() {
                     <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <Activity className="h-4 w-4" />
                     </div>
-                    <div>
+                    <div className="cursor-pointer" onClick={() => window.location.href = '/admin/dashboard/status'}>
                         <p className="text-sm font-medium text-foreground">System Status</p>
-                        <p className="text-xs text-primary flex items-center gap-1 font-semibold">
+                        <p className={`text-xs flex items-center gap-1 font-semibold ${systemStatus.state === 'Operational' ? 'text-primary' :
+                                systemStatus.state === 'Performance' ? 'text-orange-500' :
+                                    'text-destructive'
+                            }`}>
                             <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${systemStatus.state === 'Operational' ? 'bg-primary' :
+                                        systemStatus.state === 'Performance' ? 'bg-orange-500' :
+                                            'bg-destructive'
+                                    }`}></span>
+                                <span className={`relative inline-flex rounded-full h-2 w-2 ${systemStatus.state === 'Operational' ? 'bg-primary' :
+                                        systemStatus.state === 'Performance' ? 'bg-orange-500' :
+                                            'bg-destructive'
+                                    }`}></span>
                             </span>
-                            Core Operational
+                            {systemStatus.label}
                         </p>
                     </div>
                 </div>
@@ -161,7 +236,7 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div className="space-y-4 flex-1">
-                        {mockRecentVendors.map((vendor) => (
+                        {recentVendors.map((vendor) => (
                             <div key={vendor.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-muted/50 transition-colors group cursor-pointer border border-transparent hover:border-border/50">
                                 <div className="flex items-center gap-3">
                                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
@@ -175,6 +250,9 @@ export default function AdminDashboardPage() {
                                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                             </div>
                         ))}
+                        {recentVendors.length === 0 && (
+                            <p className="text-xs text-center text-muted-foreground py-8">No new vendor requests.</p>
+                        )}
                     </div>
 
                     <button className="w-full mt-6 py-3 bg-primary text-primary-foreground font-bold rounded-2xl text-xs hover:shadow-lg transition-all active:scale-95 shadow-sm shadow-primary/20">

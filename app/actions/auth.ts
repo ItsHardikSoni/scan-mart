@@ -2,9 +2,9 @@
 
 import { cookies } from 'next/headers';
 
-export async function setAdminSession() {
+export async function setAdminSession(adminData: any) {
     const cookieStore = await cookies();
-    cookieStore.set('admin_session', 'true', {
+    cookieStore.set('admin_session', JSON.stringify(adminData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',

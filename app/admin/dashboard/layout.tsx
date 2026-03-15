@@ -15,21 +15,35 @@ import {
     ShieldCheck,
     Bell,
     ChevronDown,
-    User
+    User,
+    Loader2,
+    Activity
 } from 'lucide-react';
+import { getCurrentAdmin } from '@/app/actions/admin';
+import { useEffect } from 'react';
 
 const navigation = [
     { name: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Vendors', href: '/admin/dashboard/vendors', icon: Users },
     { name: 'Messages', href: '/admin/dashboard/messages', icon: MessageSquare },
+    { name: 'System Status', href: '/admin/dashboard/status', icon: Activity },
     { name: 'Settings', href: '/admin/dashboard/settings', icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [admin, setAdmin] = useState<any>(null);
     const pathname = usePathname();
     const router = useRouter();
+
+    useEffect(() => {
+        const fetchAdmin = async () => {
+            const data = await getCurrentAdmin();
+            if (data) setAdmin(data);
+        };
+        fetchAdmin();
+    }, []);
 
     const handleLogout = async () => {
         // Mock logout: Clear session and redirect to login
@@ -157,7 +171,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     <ShieldCheck className="h-4 w-4" />
                                 </div>
                                 <div className="hidden sm:block text-left">
-                                    <p className="text-xs font-bold leading-none text-foreground">DeepMind Admin</p>
+                                    <p className="text-xs font-bold leading-none text-foreground">{admin?.full_name || 'Admin'}</p>
                                 </div>
                                 <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:block" />
                             </button>
@@ -172,8 +186,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         className="absolute right-0 mt-2 w-48 bg-card rounded-xl border border-border pb-1 shadow-lg shadow-primary/5 py-1 z-50 origin-top-right"
                                     >
                                         <div className="px-3 py-2 border-b border-border/50 mb-1">
-                                            <p className="text-xs font-bold text-foreground">DeepMind Admin</p>
-                                            <p className="text-[10px] text-muted-foreground truncate">admin@scanmart.com</p>
+                                            <p className="text-xs font-bold text-foreground">{admin?.full_name || 'Admin'}</p>
+                                            <p className="text-[10px] text-muted-foreground truncate">{admin?.email || 'admin@scanmart.com'}</p>
                                         </div>
                                         <Link
                                             href="/admin/dashboard/settings"

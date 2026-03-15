@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { setAdminSession } from '@/app/actions/auth';
+import { adminLogin } from '@/app/actions/admin';
 
 export default function AdminLoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -17,15 +19,13 @@ export default function AdminLoginPage() {
         setError('');
 
         try {
-            // REVERTED: Simple mock login
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const result = await adminLogin({ email, password });
 
-            const success = await setAdminSession();
-            if (success) {
+            if (result.success) {
                 router.push('/admin/dashboard');
                 router.refresh();
             } else {
-                setError('Failed to create session');
+                setError(result.error || 'Failed to authenticate');
             }
         } catch (err) {
             setError('System error. Please try again.');
@@ -70,6 +70,8 @@ export default function AdminLoginPage() {
                                     <input
                                         type="email"
                                         required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
                                         className="w-full h-12 bg-background/50 border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl pl-11 pr-4 py-2 text-sm outline-none transition-all"
                                         placeholder="admin@scanmart.com"
                                     />
@@ -83,6 +85,8 @@ export default function AdminLoginPage() {
                                     <input
                                         type="password"
                                         required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
                                         className="w-full h-12 bg-background/50 border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-2xl pl-11 pr-4 py-2 text-sm outline-none transition-all"
                                         placeholder="••••••••"
                                     />

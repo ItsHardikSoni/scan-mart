@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import {
     MessageSquare,
     Search,
@@ -13,26 +12,66 @@ import {
     Reply,
     Filter,
     Clock,
-    Tag
+    Tag,
+    Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { getContactMessages, updateMessageStatus, deleteMessage } from '@/app/actions/admin';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 // REVERTED: Mock messages for admin dashboard
-const mockMessagesData = [
-    { id: '1', name: 'Rohan Verma', email: 'rohan@example.com', message: 'I am interested in partnering with ScanMart for my grocery store chain. Please send more details regarding the SDK integration and hardware requirements for scanning terminals.', created_at: new Date().toISOString(), category: 'Partnership', priority: 'High' },
-    { id: '2', name: 'Sara Khan', email: 'sara.k@gmail.com', message: 'The app experience is absolutely wonderful! However, I noticed a minor calibration bug in the scanning process at Sector 18 store. It sometimes requires double scans for glossy packaging.', created_at: new Date().toISOString(), category: 'Support', priority: 'Medium' },
-    { id: '3', name: 'Hardik Soni', email: 'hardik@design.com', message: 'I love the new layout! Can you add dark mode support to the vendor dashboard as well? It would be much easier for night-shift inventory managers.', created_at: new Date().toISOString(), category: 'Feedback', priority: 'Low' },
-];
-
 export default function AdminMessagesPage() {
-    const [messages, setMessages] = useState(mockMessagesData);
+    const [messages, setMessages] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
+    const fetchMessages = async () => {
+        const res = await getContactMessages();
+        if (res.data) setMessages(res.data);
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        fetchMessages();
+
+        const channel = supabase
+            .channel('admin-messages-realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'contact_messages' },
+                () => fetchMessages()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    const handleDelete = async (id: string) => {
+        const res = await deleteMessage(id);
+        if (res.success) {
+            toast.success("Message deleted permanently");
+        } else {
+            toast.error("Failed to delete message");
+        }
+    };
+
     const filteredMessages = messages.filter(msg =>
-        msg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        msg.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        msg.message.toLowerCase().includes(searchQuery.toLowerCase())
+        msg.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.message?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="p-6 space-y-8 max-w-7xl mx-auto w-full">
@@ -105,6 +144,9 @@ export default function AdminMessagesPage() {
                                             <div>
                                                 <h3 className="font-bold text-foreground text-lg tracking-tight group-hover:text-primary transition-colors">{msg.name}</h3>
                                                 <p className="text-xs text-muted-foreground font-medium">{msg.email}</p>
+                                                {msg.subject && (
+                                                    <p className="text-[10px] text-primary font-bold uppercase tracking-widest mt-1">Subject: {msg.subject}</p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -114,8 +156,8 @@ export default function AdminMessagesPage() {
                                                 {msg.category}
                                             </span>
                                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold border ${msg.priority === 'High' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                                                    msg.priority === 'Medium' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                                        'bg-green-500/10 text-green-500 border-green-500/20'
+                                                msg.priority === 'Medium' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                                    'bg-green-500/10 text-green-500 border-green-500/20'
                                                 }`}>
                                                 {msg.priority} Priority
                                             </span>
@@ -139,11 +181,11 @@ export default function AdminMessagesPage() {
                                         Email Reply
                                     </a>
                                     <button
-                                        onClick={() => setMessages(prev => prev.filter(m => m.id !== msg.id))}
+                                        onClick={() => handleDelete(msg.id)}
                                         className="inline-flex items-center justify-center gap-2 px-6 h-11 rounded-2xl bg-background border border-border/50 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/20 text-xs font-bold transition-all active:scale-95"
                                     >
                                         <Trash2 className="h-4 w-4" />
-                                        Archive
+                                        Delete
                                     </button>
                                 </div>
                             </div>
