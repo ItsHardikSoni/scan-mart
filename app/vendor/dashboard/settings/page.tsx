@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-    Settings, Store, CreditCard, Bell, Shield, MapPin, CheckCircle2, Save, Loader2
+    Settings, Store, CreditCard, Bell, Shield, MapPin, CheckCircle2, Save, Loader2, Edit2
 } from 'lucide-react';
 import { getVendorInfo } from '@/app/actions/vendor';
 import { toast } from 'sonner';
@@ -12,6 +12,9 @@ export default function VendorSettingsPage() {
     const [vendor, setVendor] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [originalVendor, setOriginalVendor] = useState<any>(null);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const fetchVendor = async () => {
@@ -29,11 +32,13 @@ export default function VendorSettingsPage() {
         if (!vendor?.id) return;
 
         setIsSaving(true);
+        setFieldErrors({});
         const { updateVendor } = await import('@/app/actions/vendor');
 
         // Prepare data to update
         const updateData = {
             store_name: vendor.store_name,
+            email: vendor.email,
             phone_number: vendor.phone_number,
             username: vendor.username,
             gst_number: vendor.gst_number,
@@ -47,10 +52,25 @@ export default function VendorSettingsPage() {
 
         if (result.success) {
             toast.success("Profile updated successfully!");
+            setIsEditMode(false);
+        } else if (result.errors) {
+            setFieldErrors(result.errors);
+            toast.error("Please correct the errors");
         } else {
             toast.error(result.error || "Failed to update profile");
         }
         setIsSaving(false);
+    };
+
+    const handleEditToggle = () => {
+        setOriginalVendor({ ...vendor });
+        setIsEditMode(true);
+    };
+
+    const handleDiscard = () => {
+        setVendor({ ...originalVendor });
+        setFieldErrors({});
+        setIsEditMode(false);
     };
 
     const handleChange = (field: string, value: string) => {
@@ -111,9 +131,21 @@ export default function VendorSettingsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm"
                     >
-                        <h2 className="text-base font-bold text-foreground mb-4 pb-3 border-b border-border/50 flex items-center gap-2">
-                            Store Profile
-                        </h2>
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
+                            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                                Store Profile
+                            </h2>
+                            {!isEditMode && (
+                                <button
+                                    type="button"
+                                    onClick={handleEditToggle}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-all flex items-center gap-2"
+                                >
+                                    <Edit2 className="h-3 w-3" />
+                                    Edit Profile
+                                </button>
+                            )}
+                        </div>
 
                         <div className="space-y-5">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -123,7 +155,8 @@ export default function VendorSettingsPage() {
                                         type="text"
                                         value={vendor?.store_name || ''}
                                         onChange={(e) => handleChange('store_name', e.target.value)}
-                                        className="flex h-9 w-full rounded-xl border border-input bg-background/50 px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'}`}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -131,9 +164,11 @@ export default function VendorSettingsPage() {
                                     <input
                                         type="email"
                                         value={vendor?.email || ''}
-                                        disabled
-                                        className="flex h-9 w-full rounded-xl border border-input bg-muted/50 px-3 py-1.5 text-xs focus-visible:outline-none opacity-80 cursor-not-allowed"
+                                        onChange={(e) => handleChange('email', e.target.value)}
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'} ${fieldErrors.email ? 'border-red-500 ring-red-500' : ''}`}
                                     />
+                                    {fieldErrors.email && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.email}</p>}
                                 </div>
                             </div>
 
@@ -144,8 +179,10 @@ export default function VendorSettingsPage() {
                                         type="text"
                                         value={vendor?.phone_number || ''}
                                         onChange={(e) => handleChange('phone_number', e.target.value)}
-                                        className="flex h-9 w-full rounded-xl border border-input bg-background/50 px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'} ${fieldErrors.phone_number ? 'border-red-500 ring-red-500' : ''}`}
                                     />
+                                    {fieldErrors.phone_number && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.phone_number}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-medium text-foreground">Username</label>
@@ -153,8 +190,10 @@ export default function VendorSettingsPage() {
                                         type="text"
                                         value={vendor?.username || ''}
                                         onChange={(e) => handleChange('username', e.target.value)}
-                                        className="flex h-9 w-full rounded-xl border border-input bg-background/50 px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'} ${fieldErrors.username ? 'border-red-500 ring-red-500' : ''}`}
                                     />
+                                    {fieldErrors.username && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.username}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-medium text-foreground">GST Certificate (Optional)</label>
@@ -162,7 +201,8 @@ export default function VendorSettingsPage() {
                                         type="text"
                                         value={vendor?.gst_number || ''}
                                         onChange={(e) => handleChange('gst_number', e.target.value)}
-                                        className="flex h-9 w-full rounded-xl border border-input bg-background/50 px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'}`}
                                     />
                                 </div>
                             </div>
@@ -174,7 +214,8 @@ export default function VendorSettingsPage() {
                                         type="text"
                                         value={vendor?.store_address || ''}
                                         onChange={(e) => handleChange('store_address', e.target.value)}
-                                        className="flex h-9 w-full rounded-xl border border-input bg-background/50 px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'}`}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -183,7 +224,8 @@ export default function VendorSettingsPage() {
                                         type="text"
                                         value={vendor?.pincode || ''}
                                         onChange={(e) => handleChange('pincode', e.target.value)}
-                                        className="flex h-9 w-full rounded-xl border border-input bg-background/50 px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'}`}
                                     />
                                 </div>
                             </div>
@@ -195,7 +237,8 @@ export default function VendorSettingsPage() {
                                         type="text"
                                         value={vendor?.district || ''}
                                         onChange={(e) => handleChange('district', e.target.value)}
-                                        className="flex h-9 w-full rounded-xl border border-input bg-background/50 px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'}`}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -204,31 +247,28 @@ export default function VendorSettingsPage() {
                                         type="text"
                                         value={vendor?.state || ''}
                                         onChange={(e) => handleChange('state', e.target.value)}
-                                        className="flex h-9 w-full rounded-xl border border-input bg-background/50 px-3 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                        disabled={!isEditMode}
+                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'}`}
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-8 pt-6 border-t border-border/50 flex justify-end gap-3">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsLoading(true);
-                                    getVendorInfo().then(res => {
-                                        if (res.data) setVendor(res.data);
-                                        setIsLoading(false);
-                                    });
-                                }}
-                                className="px-3 py-1.5 rounded-xl text-xs font-medium text-foreground border border-border hover:bg-muted/50 transition-colors"
-                            >
-                                Discard
-                            </button>
-                            <button type="submit" disabled={isSaving} className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors gap-2 shadow-sm shadow-primary/20">
-                                {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                                Save Changes
-                            </button>
-                        </div>
+                        {isEditMode && (
+                            <div className="mt-8 pt-6 border-t border-border/50 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={handleDiscard}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-medium text-foreground border border-border hover:bg-muted/50 transition-colors"
+                                >
+                                    Discard
+                                </button>
+                                <button type="submit" disabled={isSaving} className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors gap-2 shadow-sm shadow-primary/20">
+                                    {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                                    Save Changes
+                                </button>
+                            </div>
+                        )}
                     </motion.form>
 
                     {/* Quick Status Toggles */}

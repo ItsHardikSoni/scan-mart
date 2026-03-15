@@ -7,15 +7,27 @@ import bcrypt from 'bcryptjs';
 export async function registerVendor(formData: any) {
     try {
         // 1. Basic validation
-        if (!formData.username || !formData.email || !formData.password) {
-            return { error: 'Missing required fields' };
+        // 2. Check for existing duplicates
+        const { data: existingVendor, error: checkError } = await supabase
+            .from('vendors')
+            .select('username, email, phone_number')
+            .or(`username.eq.${formData.username},email.eq.${formData.email},phone_number.eq.${formData.phone_number}`);
+
+        if (existingVendor && existingVendor.length > 0) {
+            const errors: Record<string, string> = {};
+            existingVendor.forEach(v => {
+                if (v.username === formData.username) errors.username = 'Username is already taken';
+                if (v.email === formData.email) errors.email = 'Email is already registered';
+                if (v.phone_number === formData.phone_number) errors.phone_number = 'Phone number is already in use';
+            });
+            return { errors };
         }
 
-        // 2. Hash password
+        // 3. Hash password
         const salt = await bcrypt.genSalt(10);
         const password_hash = await bcrypt.hash(formData.password, salt);
 
-        // 3. Insert into Supabase
+        // 4. Insert into Supabase
         const { error } = await supabase
             .from('vendors')
             .insert([{
@@ -33,10 +45,7 @@ export async function registerVendor(formData: any) {
                 status: 'Pending'
             }]);
 
-        if (error) {
-            if (error.code === '23505') return { error: 'Username or Email already exists' };
-            return { error: error.message };
-        }
+        if (error) return { error: error.message };
 
         return { success: true };
     } catch (err) {
@@ -104,6 +113,30 @@ export async function getVendorInfo() {
 
 export async function updateVendor(vendorId: string, updateData: any) {
     try {
+        // 1. Check for duplicates (excluding current vendor)
+        if (updateData.username || updateData.email || updateData.phone_number) {
+            let filter = [];
+            if (updateData.username) filter.push(`username.eq.${updateData.username}`);
+            if (updateData.email) filter.push(`email.eq.${updateData.email}`);
+            if (updateData.phone_number) filter.push(`phone_number.eq.${updateData.phone_number}`);
+
+            const { data: existing, error: checkError } = await supabase
+                .from('vendors')
+                .select('id, username, email, phone_number')
+                .or(filter.join(','))
+                .neq('id', vendorId);
+
+            if (existing && existing.length > 0) {
+                const errors: Record<string, string> = {};
+                existing.forEach(v => {
+                    if (v.username === updateData.username) errors.username = 'Username already taken';
+                    if (v.email === updateData.email) errors.email = 'Email already in use';
+                    if (v.phone_number === updateData.phone_number) errors.phone_number = 'Phone number already in use';
+                });
+                return { errors };
+            }
+        }
+
         const { error } = await supabase
             .from('vendors')
             .update(updateData)

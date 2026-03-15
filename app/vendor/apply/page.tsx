@@ -13,6 +13,7 @@ export default function VendorApplyPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [formData, setFormData] = useState({
         username: '',
         store_name: '',
@@ -28,17 +29,30 @@ export default function VendorApplyPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        // Clear field error when user starts typing again
+        if (fieldErrors[e.target.name]) {
+            setFieldErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[e.target.name];
+                return newErrors;
+            });
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        setFieldErrors({});
 
         const result = await registerVendor(formData);
 
         if (result.success) {
             setIsSubmitted(true);
             toast.success('Application submitted successfully!');
+        } else if (result.errors) {
+            setFieldErrors(result.errors);
+            toast.error('Please correct the highlighted errors');
+            setIsLoading(false);
         } else {
             toast.error(result.error || 'Failed to submit application');
             setIsLoading(false);
@@ -118,11 +132,13 @@ export default function VendorApplyPage() {
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold text-slate-700 ml-1">Username</label>
-                                    <Input required name="username" value={formData.username} onChange={handleChange} placeholder="unique_handle" className="rounded-xl bg-slate-50/50" />
+                                    <Input required name="username" value={formData.username} onChange={handleChange} placeholder="unique_handle" className={`rounded-xl bg-slate-50/50 ${fieldErrors.username ? 'border-red-500 ring-red-500' : ''}`} />
+                                    {fieldErrors.username && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.username}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold text-slate-700 ml-1">Email</label>
-                                    <Input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="owner@store.com" className="rounded-xl bg-slate-50/50" />
+                                    <Input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="owner@store.com" className={`rounded-xl bg-slate-50/50 ${fieldErrors.email ? 'border-red-500 ring-red-500' : ''}`} />
+                                    {fieldErrors.email && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.email}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold text-slate-700 ml-1">Password</label>
@@ -161,7 +177,8 @@ export default function VendorApplyPage() {
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold text-slate-700 ml-1">Mobile Number</label>
-                                    <Input required name="phone_number" value={formData.phone_number} onChange={handleChange} placeholder="+91 XXXXX XXXXX" className="rounded-xl bg-slate-50/50" />
+                                    <Input required name="phone_number" value={formData.phone_number} onChange={handleChange} placeholder="+91 XXXXX XXXXX" className={`rounded-xl bg-slate-50/50 ${fieldErrors.phone_number ? 'border-red-500 ring-red-500' : ''}`} />
+                                    {fieldErrors.phone_number && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.phone_number}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold text-slate-700 ml-1">GST Number <span className="text-[10px] text-slate-400">(Optional)</span></label>
