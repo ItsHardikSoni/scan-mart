@@ -24,6 +24,8 @@ const poppins = Poppins({
 export const metadata = baseMetadata
 export const viewport = baseViewport
 
+import ConditionalLayout from '@/components/layout/conditional-layout'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -84,10 +86,9 @@ export default function RootLayout({
         <JsonLd schema={[organizationSchema, websiteSchema, softwareAppSchema, developerSchema]} />
       </head>
       <body className={`${poppins.variable} font-sans antialiased`}>
-        <Navbar />
-        <ScrollToTop />
-        <main>{children}</main>
-        <Footer />
+        <ConditionalLayout>
+          {children}
+        </ConditionalLayout>
         <Analytics />
       </body>
     </html>

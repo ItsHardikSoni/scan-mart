@@ -31,7 +31,7 @@ const contactInfo = [
     value: "Patna, Bihar, India",
     href: "#",
     color: "bg-primary dark:bg-primary",
-    textColor: "text-white dark:text-white" 
+    textColor: "text-white dark:text-white"
   },
 ]
 
@@ -49,10 +49,10 @@ export function ContactForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     // Simulate form submission
     await new Promise((resolve) => setTimeout(resolve, 1000))
-    
+
     setIsSubmitting(false)
     setSubmitted(true)
   }

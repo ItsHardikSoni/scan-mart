@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { Menu, X, Scan } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,7 @@ const navLinks = [
 ]
 
 export function Navbar() {
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -69,6 +71,8 @@ export function Navbar() {
     }
   }, [isOpen])
 
+  if (pathname?.startsWith('/vendor')) return null;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -94,8 +98,8 @@ export function Navbar() {
 
         <div className="hidden md:flex">
           <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link href="/feedback">
-              Feedback
+            <Link href="/vendor/dashboard">
+              Dashboard
             </Link>
           </Button>
         </div>
@@ -128,8 +132,8 @@ export function Navbar() {
       <div
         ref={menuRef}
         className={`fixed left-0 right-0 top-16 z-50 border-b border-border bg-background shadow-lg transition-all duration-300 ease-in-out md:hidden ${isOpen
-            ? 'translate-y-0 opacity-100'
-            : '-translate-y-full opacity-0 pointer-events-none'
+          ? 'translate-y-0 opacity-100'
+          : '-translate-y-full opacity-0 pointer-events-none'
           }`}
       >
         <div className="container mx-auto flex flex-col gap-4 px-4 py-6">
@@ -144,8 +148,8 @@ export function Navbar() {
             </Link>
           ))}
           <Button asChild className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link href="/feedback" onClick={() => setIsOpen(false)}>
-              Feedback
+            <Link href="/vendor/dashboard" onClick={() => setIsOpen(false)}>
+              Dashboard
             </Link>
           </Button>
         </div>

@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { Scan, Twitter, Instagram, Linkedin, Facebook, Github, Globe } from "lucide-react"
 import { siteConfig } from "@/lib/seo/config"
@@ -30,6 +33,10 @@ const developerSocialLinks = [
 ]
 
 export function Footer() {
+  const pathname = usePathname()
+
+  if (pathname?.startsWith('/vendor')) return null;
+
   return (
     <footer className="border-t border-border bg-muted/30">
       <div className="container mx-auto px-4 py-12 md:px-6">
