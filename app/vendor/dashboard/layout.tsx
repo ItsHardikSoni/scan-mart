@@ -18,7 +18,9 @@ import {
     User
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import NotificationBell from '@/components/vendor/NotificationBell';
 import { toast } from 'sonner';
+
 const navItems = [
     { href: '/vendor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/vendor/dashboard/products', icon: Package, label: 'Products' },
@@ -213,10 +215,7 @@ export default function VendorDashboardLayout({
 
                     <div className="flex items-center gap-4 ml-auto">
                         {/* Notifications */}
-                        <button className="relative p-2 text-muted-foreground hover:bg-muted/50 rounded-full transition-colors hidden sm:block">
-                            <Bell className="h-5 w-5" />
-                            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-destructive rounded-full animate-pulse" />
-                        </button>
+                        <NotificationBell vendorId={vendor?.id} />
 
 
                         {/* Profile Dropdown */}

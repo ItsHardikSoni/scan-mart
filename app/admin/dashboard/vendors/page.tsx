@@ -15,7 +15,14 @@ import {
     Calendar,
     ArrowUpRight,
     Trash2,
-    Loader2
+    Loader2,
+    X,
+    Phone,
+    Hash,
+    Building2,
+    CreditCard,
+    Globe,
+    FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -26,6 +33,7 @@ export default function AdminVendorsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
+    const [selectedVendor, setSelectedVendor] = useState<any>(null);
 
     useEffect(() => {
         fetchVendors();
@@ -176,7 +184,8 @@ export default function AdminVendorsPage() {
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ delay: idx * 0.05 }}
                             key={vendor.id}
-                            className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+                            onClick={() => setSelectedVendor(vendor)}
+                            className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all relative overflow-hidden group cursor-pointer"
                         >
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
 
@@ -275,6 +284,189 @@ export default function AdminVendorsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Vendor Detail Modal */}
+            <AnimatePresence>
+                {selectedVendor && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedVendor(null)}
+                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-2xl bg-card border border-border/50 rounded-[2.5rem] shadow-2xl shadow-primary/10 overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            {/* Modal Header */}
+                            <div className="p-8 border-b border-border/50 flex items-center justify-between bg-muted/20 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
+                                <div className="flex items-center gap-5">
+                                    <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center font-bold text-2xl text-primary border border-primary/20 shadow-inner">
+                                        {selectedVendor.store_name?.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-foreground tracking-tight">{selectedVendor.store_name}</h2>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${selectedVendor.status === 'Approved' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                selectedVendor.status === 'Pending' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                                    'bg-destructive/10 text-destructive border-destructive/20'
+                                                }`}>
+                                                {selectedVendor.status}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest flex items-center gap-1.5 ml-2">
+                                                <Calendar className="h-3 w-3" />
+                                                Joined {new Date(selectedVendor.created_at).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedVendor(null)}
+                                    className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                                {/* Store Info Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-6">
+                                        <div className="space-y-4">
+                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                                                <Building2 className="h-3 w-3" />
+                                                General Information
+                                            </h3>
+                                            <div className="space-y-3">
+                                                <div className="p-4 bg-muted/30 border border-border/50 rounded-2xl space-y-1">
+                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Username / Handle</p>
+                                                    <p className="text-sm font-semibold text-foreground">@{selectedVendor.username}</p>
+                                                </div>
+                                                <div className="p-4 bg-muted/30 border border-border/50 rounded-2xl space-y-1">
+                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Store Email</p>
+                                                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                                        <Mail className="h-4 w-4 text-primary/60" />
+                                                        {selectedVendor.email}
+                                                    </p>
+                                                </div>
+                                                <div className="p-4 bg-muted/30 border border-border/50 rounded-2xl space-y-1">
+                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Contact Phone</p>
+                                                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                                        <Phone className="h-4 w-4 text-primary/60" />
+                                                        {selectedVendor.phone_number || 'Not provided'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                                                <CreditCard className="h-3 w-3" />
+                                                Compliance & Tax
+                                            </h3>
+                                            <div className="p-4 bg-muted/30 border border-border/50 rounded-2xl space-y-1">
+                                                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">GST Number</p>
+                                                <p className="text-sm font-black text-foreground tracking-widest font-mono">
+                                                    {selectedVendor.gst_number || 'UNREGISTERED'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="space-y-4">
+                                            <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                                                <MapPin className="h-3 w-3" />
+                                                Operational Location
+                                            </h3>
+                                            <div className="p-5 bg-muted/30 border border-border/50 rounded-3xl space-y-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Full Address</p>
+                                                    <p className="text-sm font-medium leading-relaxed italic text-foreground/80">
+                                                        &ldquo;{selectedVendor.store_address || 'Address information missing'}&rdquo;
+                                                    </p>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/30">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">District</p>
+                                                        <p className="text-sm font-bold">{selectedVendor.district}</p>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">State</p>
+                                                        <p className="text-sm font-bold">{selectedVendor.state}</p>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Pincode</p>
+                                                        <p className="text-sm font-bold font-mono tracking-widest">{selectedVendor.pincode}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 bg-primary/5 border border-primary/20 rounded-3xl space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-primary/10 rounded-xl">
+                                                    <ShieldAlert className="h-4 w-4 text-primary" />
+                                                </div>
+                                                <h4 className="text-xs font-bold uppercase tracking-widest text-primary">Intelligence View</h4>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                                Verify the GST and Store address before approval. Blocked vendors will lose all access to their dashboard and POS systems immediately.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal Footer (Actions) */}
+                            <div className="p-8 border-t border-border/50 bg-muted/10 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => handleDeleteVendor(selectedVendor.id)}
+                                        className="h-12 px-6 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white rounded-2xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete Vendor
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {selectedVendor.status !== 'Approved' && (
+                                        <button
+                                            onClick={() => {
+                                                handleStatusChange(selectedVendor.id, 'Approved');
+                                                setSelectedVendor(null);
+                                            }}
+                                            className="h-12 px-8 bg-green-500 text-white hover:bg-green-600 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-green-500/20 flex items-center gap-2"
+                                        >
+                                            <Check className="h-4 w-4" />
+                                            Approve Store
+                                        </button>
+                                    )}
+                                    {selectedVendor.status !== 'Blocked' && (
+                                        <button
+                                            onClick={() => {
+                                                handleStatusChange(selectedVendor.id, 'Blocked');
+                                                setSelectedVendor(null);
+                                            }}
+                                            className="h-12 px-8 bg-amber-500 text-white hover:bg-amber-600 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2"
+                                        >
+                                            <ShieldAlert className="h-4 w-4" />
+                                            Block Access
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 }

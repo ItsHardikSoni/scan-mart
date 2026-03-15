@@ -42,6 +42,7 @@ export default function SystemStatusPage() {
     const [topologyData, setTopologyData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedSystem, setSelectedSystem] = useState<any>(null);
+    const [globalUptime, setGlobalUptime] = useState<string>('99.9%');
 
     const fetchStatus = async () => {
         setIsRefreshing(true);
@@ -51,6 +52,7 @@ export default function SystemStatusPage() {
                 setStatusData(res.data.results);
                 setRealLogs(res.data.logs);
                 setTopologyData(res.data.topology);
+                setGlobalUptime(res.data.globalUptime);
                 setLastUpdated(new Date().toLocaleTimeString());
             }
         } catch (error) {
@@ -139,19 +141,43 @@ export default function SystemStatusPage() {
                         </p>
                     </div>
                     {!isLoading && (
-                        <div className="md:ml-auto grid grid-cols-2 gap-4">
-                            <div className="bg-background/50 p-4 rounded-2xl border border-border/50 text-center min-w-[100px]">
-                                <p className="text-2xl font-bold text-foreground">99.9%</p>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Global Uptime</p>
+                        <div className="md:ml-auto flex flex-col items-end gap-3">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-background/50 p-4 rounded-2xl border border-border/50 text-center min-w-[100px]">
+                                    <p className="text-2xl font-bold text-foreground">{globalUptime}</p>
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Global Uptime</p>
+                                </div>
+                                <div className="bg-background/50 p-4 rounded-2xl border border-border/50 text-center min-w-[100px]">
+                                    <p className="text-2xl font-bold text-foreground">{avgLatency}ms</p>
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Avg Latency</p>
+                                </div>
                             </div>
-                            <div className="bg-background/50 p-4 rounded-2xl border border-border/50 text-center min-w-[100px]">
-                                <p className="text-2xl font-bold text-foreground">{avgLatency}ms</p>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Avg Latency</p>
+                            <div className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${allOperational ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-orange-500/10 border-orange-500/20 text-orange-500'
+                                }`}>
+                                <span className={`h-2 w-2 rounded-full animate-pulse ${allOperational ? 'bg-green-500' : 'bg-orange-500'}`} />
+                                {allOperational ? 'Systems are running fast and healthy!' : 'Systems are experiencing minor delays.'}
                             </div>
                         </div>
                     )}
                 </div>
             </motion.div>
+
+            {/* Status Legend */}
+            <div className="flex flex-wrap items-center gap-6 px-4 py-3 bg-muted/20 border border-border/50 rounded-2xl">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-2">Status Legend:</p>
+                <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                    <span className="text-xs font-bold text-foreground">Operational <span className="text-[10px] font-medium text-muted-foreground ml-1">(Everything is great)</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
+                    <span className="text-xs font-bold text-foreground">Performance Issue <span className="text-[10px] font-medium text-muted-foreground ml-1">(Slightly slow)</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
+                    <span className="text-xs font-bold text-foreground">Outage <span className="text-[10px] font-medium text-muted-foreground ml-1">(System is down)</span></span>
+                </div>
+            </div>
 
             {/* Systems Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -327,6 +353,31 @@ export default function SystemStatusPage() {
                         </div>
                     </div>
                 </Card>
+            </div>
+
+            {/* Beginner Knowledge Base (FAQ) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                <div className="p-6 bg-primary/5 border border-primary/10 rounded-[2rem] space-y-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">?</div>
+                    <h4 className="text-sm font-bold text-foreground">What is Latency (RTT)?</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Think of it as the "travel time" for data. It's how long it takes for a message to go to our servers and back to you. <strong>Lower is better!</strong>
+                    </p>
+                </div>
+                <div className="p-6 bg-secondary/5 border border-secondary/10 rounded-[2rem] space-y-3">
+                    <div className="h-10 w-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center font-bold">🌐</div>
+                    <h4 className="text-sm font-bold text-foreground">What is Edge Topology?</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        These are "mini-servers" located all over the world. By keeping a server close to your city (like Mumbai), we make sure the website loads instantly.
+                    </p>
+                </div>
+                <div className="p-6 bg-muted/30 border border-border/50 rounded-[2rem] space-y-3">
+                    <div className="h-10 w-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center font-bold">📈</div>
+                    <h4 className="text-sm font-bold text-foreground">What is Uptime?</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Uptime is the percentage of time the system has been "awake" and working properly over the last 30 days. We aim for <strong>99.9%</strong>.
+                    </p>
+                </div>
             </div>
 
             {/* Performance Detail Modal */}

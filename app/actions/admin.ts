@@ -368,5 +368,65 @@ export async function getSystemStatus() {
         { name: 'Global Edge (Cloudflare)', latency: `${Math.max(2, baseLat - 2)}ms`, load: '99%' },
     ];
 
-    return { data: { results, logs: logs.slice(0, 5), topology } };
+    // Calculate Global Uptime
+    const totalUptime = results.reduce((acc, curr) => {
+        const val = parseFloat(curr.uptime.replace('%', ''));
+        return acc + val;
+    }, 0);
+    const globalUptime = (totalUptime / results.length).toFixed(2) + '%';
+
+    return { data: { results, logs: logs.slice(0, 5), topology, globalUptime } };
+}
+
+export async function sendNotification(data: {
+    recipientIds: string[];
+    title: string;
+    message: string;
+    type: 'info' | 'warning' | 'success';
+}) {
+    try {
+        const supabase = await getAdminSupabase();
+
+        if (data.recipientIds.includes('all') || data.recipientIds.length === 0) {
+            const { error } = await supabase
+                .from('vendor_notifications')
+                .insert([{
+                    title: data.title,
+                    message: data.message,
+                    type: data.type,
+                    vendor_id: null
+                }]);
+            if (error) throw error;
+        } else {
+            const notifications = data.recipientIds.map(id => ({
+                vendor_id: id,
+                title: data.title,
+                message: data.message,
+                type: data.type
+            }));
+            const { error } = await supabase
+                .from('vendor_notifications')
+                .insert(notifications);
+            if (error) throw error;
+        }
+
+        return { success: true };
+    } catch (err: any) {
+        return { error: err.message };
+    }
+}
+
+export async function getAllVendors() {
+    try {
+        const supabase = await getAdminSupabase();
+        const { data, error } = await supabase
+            .from('vendors')
+            .select('id, store_name, email, username')
+            .order('store_name', { ascending: true });
+
+        if (error) throw error;
+        return { data };
+    } catch (err: any) {
+        return { error: err.message };
+    }
 }

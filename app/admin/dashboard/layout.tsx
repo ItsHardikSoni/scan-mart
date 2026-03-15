@@ -17,7 +17,8 @@ import {
     ChevronDown,
     User,
     Loader2,
-    Activity
+    Activity,
+    Megaphone
 } from 'lucide-react';
 import { getCurrentAdmin } from '@/app/actions/admin';
 import { useEffect } from 'react';
@@ -26,6 +27,7 @@ const navigation = [
     { name: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Vendors', href: '/admin/dashboard/vendors', icon: Users },
     { name: 'Messages', href: '/admin/dashboard/messages', icon: MessageSquare },
+    { name: 'Broadcast', href: '/admin/dashboard/notifications', icon: Megaphone },
     { name: 'System Status', href: '/admin/dashboard/status', icon: Activity },
     { name: 'Settings', href: '/admin/dashboard/settings', icon: Settings },
 ];

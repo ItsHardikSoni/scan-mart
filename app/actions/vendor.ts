@@ -164,3 +164,35 @@ export async function updateVendor(vendorId: string, updateData: any) {
         return { error: err.message };
     }
 }
+
+export async function getVendorNotifications() {
+    try {
+        const info = await getVendorInfo();
+        if (info.error || !info.data) return { error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('vendor_notifications')
+            .select('*')
+            .or(`vendor_id.eq.${info.data.id},vendor_id.is.null`)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return { data };
+    } catch (err: any) {
+        return { error: err.message };
+    }
+}
+
+export async function markNotificationAsRead(id: string) {
+    try {
+        const { error } = await supabase
+            .from('vendor_notifications')
+            .update({ is_read: true })
+            .eq('id', id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (err: any) {
+        return { error: err.message };
+    }
+}
