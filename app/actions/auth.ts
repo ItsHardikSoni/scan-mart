@@ -20,9 +20,9 @@ export async function clearAdminSession() {
     return true;
 }
 
-export async function setVendorSession() {
+export async function setVendorSession(vendorData: any) {
     const cookieStore = await cookies();
-    cookieStore.set('vendor_session', 'true', {
+    cookieStore.set('vendor_session', JSON.stringify(vendorData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',

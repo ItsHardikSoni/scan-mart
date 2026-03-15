@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Users,
     Search,
@@ -13,38 +13,109 @@ import {
     Store,
     MapPin,
     Calendar,
-    ArrowUpRight
+    ArrowUpRight,
+    Trash2,
+    Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// REVERTED: Mock vendors for admin management
-const mockVendorsData = [
-    { id: '1', store_name: 'Metro Mart', email: 'contact@metromart.com', status: 'Pending', created_at: new Date().toISOString(), category: 'Groceries', location: 'New Delhi' },
-    { id: '2', store_name: 'City Supermarket', email: 'city@super.com', status: 'Approved', created_at: new Date().toISOString(), category: 'Daily Needs', location: 'Mumbai' },
-    { id: '3', store_name: 'Green Grocers', email: 'orders@green.com', status: 'Approved', created_at: new Date().toISOString(), category: 'Organic', location: 'Bangalore' },
-    { id: '4', store_name: 'Daily Needs', email: 'daily@needs.com', status: 'Blocked', created_at: new Date().toISOString(), category: 'General', location: 'Chennai' },
-    { id: '5', store_name: 'Mega Store', email: 'admin@megastore.in', status: 'Pending', created_at: new Date().toISOString(), category: 'Hypermarket', location: 'Pune' },
-];
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminVendorsPage() {
-    const [vendors, setVendors] = useState(mockVendorsData);
+    const [vendors, setVendors] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
 
-    const handleStatusChange = (id: string, newStatus: string) => {
-        setVendors(prev => prev.map(v => v.id === id ? { ...v, status: newStatus } : v));
+    useEffect(() => {
+        fetchVendors();
+
+        // Set up real-time subscription
+        const channel = supabase
+            .channel('admin-vendors-realtime')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'vendors'
+                },
+                (payload) => {
+                    if (payload.eventType === 'INSERT') {
+                        setVendors((prev) => [payload.new, ...prev]);
+                    } else if (payload.eventType === 'UPDATE') {
+                        setVendors((prev) =>
+                            prev.map((v) => (v.id === payload.new.id ? payload.new : v))
+                        );
+                    } else if (payload.eventType === 'DELETE') {
+                        setVendors((prev) => prev.filter((v) => v.id === payload.old.id));
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    const fetchVendors = async () => {
+        try {
+            const res = await fetch('/api/v0/admin/vendors');
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setVendors(data);
+            }
+        } catch (err) {
+            toast.error('Failed to load vendors');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleStatusChange = async (id: string, newStatus: string) => {
+        try {
+            const { updateVendorStatus } = await import('@/app/actions/admin');
+            const result = await updateVendorStatus(id, newStatus, newStatus === 'Approved');
+
+            if (result.success) {
+                toast.success(`Vendor status updated to ${newStatus}`);
+            } else {
+                toast.error(result.error || 'Failed to update status');
+            }
+        } catch (err) {
+            toast.error('System error');
+        }
+    };
+
+    const handleDeleteVendor = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this vendor? This action is permanent.')) return;
+
+        try {
+            const { deleteVendor } = await import('@/app/actions/admin');
+            const result = await deleteVendor(id);
+
+            if (result.success) {
+                toast.success('Vendor deleted successfully');
+            } else {
+                toast.error(result.error || 'Failed to delete vendor');
+            }
+        } catch (err) {
+            toast.error('System error');
+        }
     };
 
     const filteredVendors = vendors.filter(vendor => {
-        const matchesSearch = vendor.store_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            vendor.email.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (vendor.store_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+            (vendor.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+            (vendor.district?.toLowerCase() || '').includes(searchQuery.toLowerCase());
         const matchesFilter = filterStatus === 'All' || vendor.status === filterStatus;
         return matchesSearch && matchesFilter;
     });
 
     return (
         <div className="p-6 space-y-8 max-w-7xl mx-auto w-full">
-            {/* Header section - Aligned with the new Overview style */}
+            {/* Header section */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -58,20 +129,20 @@ export default function AdminVendorsPage() {
                     <p className="text-sm text-muted-foreground mt-1">Review, verify and moderate all registered platform vendors.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="h-10 px-4 bg-background/50 border border-border/50 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:border-border transition-all flex items-center gap-2 backdrop-blur-md">
-                        <ArrowUpRight className="h-4 w-4" />
-                        Platform Report
+                    <button onClick={fetchVendors} className="h-10 px-4 bg-background/50 border border-border/50 rounded-xl text-xs font-bold text-muted-foreground hover:text-foreground hover:border-border transition-all flex items-center gap-2 backdrop-blur-md">
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
+                        Refresh List
                     </button>
                 </div>
             </motion.div>
 
-            {/* Filters and Search Bar - Premium Style */}
+            {/* Filters and Search Bar */}
             <div className="bg-card border border-border/50 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-4 justify-between items-center">
                 <div className="relative w-full sm:max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                     <input
                         type="text"
-                        placeholder="Search stores, emails, or locations..."
+                        placeholder="Search stores, emails, or districts..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="flex h-9 w-full rounded-xl border border-input bg-background/50 pl-9 pr-4 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all font-medium"
@@ -84,8 +155,8 @@ export default function AdminVendorsPage() {
                             key={status}
                             onClick={() => setFilterStatus(status)}
                             className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${filterStatus === status
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                                 }`}
                         >
                             {status}
@@ -97,7 +168,7 @@ export default function AdminVendorsPage() {
             {/* Vendor Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 <AnimatePresence mode="popLayout">
-                    {filteredVendors.map((vendor, idx) => (
+                    {!isLoading && filteredVendors.map((vendor, idx) => (
                         <motion.div
                             layout
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -111,15 +182,15 @@ export default function AdminVendorsPage() {
 
                             <div className="flex items-center justify-between mb-6 relative z-10">
                                 <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center font-bold text-lg text-primary border border-primary/20 shadow-inner">
-                                    {vendor.store_name.charAt(0)}
+                                    {(vendor.store_name || 'V').charAt(0)}
                                 </div>
                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${vendor.status === 'Approved' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                        vendor.status === 'Pending' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                            'bg-destructive/10 text-destructive border-destructive/20'
+                                    vendor.status === 'Pending' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                        'bg-destructive/10 text-destructive border-destructive/20'
                                     }`}>
                                     <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${vendor.status === 'Approved' ? 'bg-green-500' :
-                                            vendor.status === 'Pending' ? 'bg-orange-500' :
-                                                'bg-destructive'
+                                        vendor.status === 'Pending' ? 'bg-orange-500' :
+                                            'bg-destructive'
                                         }`} />
                                     {vendor.status}
                                 </span>
@@ -133,17 +204,17 @@ export default function AdminVendorsPage() {
 
                                 <div className="grid grid-cols-2 gap-3 py-4 border-y border-border/50">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Category</p>
+                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Username</p>
                                         <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                                            <Store className="h-3 w-3 text-primary/60" />
-                                            {vendor.category}
+                                            <Users className="h-3 w-3 text-primary/60" />
+                                            {vendor.username}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Location</p>
+                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">District</p>
                                         <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                                             <MapPin className="h-3 w-3 text-primary/60" />
-                                            {vendor.location}
+                                            {vendor.district}
                                         </p>
                                     </div>
                                 </div>
@@ -166,14 +237,18 @@ export default function AdminVendorsPage() {
                                         {vendor.status !== 'Blocked' && (
                                             <button
                                                 onClick={() => handleStatusChange(vendor.id, 'Blocked')}
-                                                className="p-2 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white rounded-xl transition-all"
+                                                className="p-2 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-xl transition-all"
                                                 title="Block"
                                             >
                                                 <ShieldAlert className="h-4 w-4" />
                                             </button>
                                         )}
-                                        <button className="p-2 hover:bg-muted rounded-xl transition-colors">
-                                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                                        <button
+                                            onClick={() => handleDeleteVendor(vendor.id)}
+                                            className="p-2 bg-destructive/10 text-destructive hover:bg-destructive hover:text-white rounded-xl transition-all"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
                                 </div>
@@ -182,7 +257,7 @@ export default function AdminVendorsPage() {
                     ))}
                 </AnimatePresence>
 
-                {filteredVendors.length === 0 && (
+                {!isLoading && filteredVendors.length === 0 && (
                     <div className="col-span-full py-32 flex flex-col items-center justify-center text-center space-y-4">
                         <div className="h-20 w-20 bg-muted/50 rounded-full flex items-center justify-center border-2 border-dashed border-border/50">
                             <Store className="h-10 w-10 text-muted-foreground/30" />
@@ -191,6 +266,12 @@ export default function AdminVendorsPage() {
                         <p className="text-muted-foreground text-sm max-w-xs mx-auto mt-1">
                             Adjust your filters or try a different search term in the control center.
                         </p>
+                    </div>
+                )}
+                {isLoading && (
+                    <div className="col-span-full py-32 flex flex-col items-center justify-center text-center">
+                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                        <p className="text-muted-foreground text-sm mt-4">Loading vendor ecosystem...</p>
                     </div>
                 )}
             </div>

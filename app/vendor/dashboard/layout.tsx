@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +17,8 @@ import {
     ChevronDown,
     User
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 const navItems = [
     { href: '/vendor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/vendor/dashboard/products', icon: Package, label: 'Products' },
@@ -34,6 +36,74 @@ export default function VendorDashboardLayout({
     const [profileOpen, setProfileOpen] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
+
+    const [vendor, setVendor] = useState<any>(null);
+
+    useEffect(() => {
+        const fetchVendor = async () => {
+            const { getVendorInfo } = await import('@/app/actions/vendor');
+            const result = await getVendorInfo();
+            if (result.data) {
+                setVendor(result.data);
+            }
+        };
+        fetchVendor();
+    }, []);
+
+    useEffect(() => {
+        if (!vendor?.id) return;
+
+        const channel = supabase
+            .channel(`vendor-status-${vendor.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'vendors',
+                    filter: `id=eq.${vendor.id}`
+                },
+                (payload) => {
+                    console.log('Vendor status update:', payload);
+                    if (payload.eventType === 'UPDATE') {
+                        const newStatus = payload.new.status;
+                        if (newStatus === 'Blocked') {
+                            toast.error('Your account has been blocked by an administrator.', {
+                                duration: Infinity,
+                            });
+                            // Clear session and redirect
+                            const forceLogout = async () => {
+                                const { clearVendorSession } = await import('@/app/actions/auth');
+                                await clearVendorSession();
+                                setTimeout(() => {
+                                    window.location.href = '/vendor/login';
+                                }, 3000);
+                            };
+                            forceLogout();
+                        } else {
+                            setVendor(payload.new);
+                        }
+                    } else if (payload.eventType === 'DELETE') {
+                        toast.error('Your account has been removed.', {
+                            duration: Infinity,
+                        });
+                        const forceLogout = async () => {
+                            const { clearVendorSession } = await import('@/app/actions/auth');
+                            await clearVendorSession();
+                            setTimeout(() => {
+                                window.location.href = '/vendor/login';
+                            }, 2000);
+                        };
+                        forceLogout();
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [vendor?.id, router]);
 
     const handleLogout = async () => {
         // Mock logout: Clear session and redirect to login
@@ -159,7 +229,7 @@ export default function VendorDashboardLayout({
                                     <User className="h-4 w-4" />
                                 </div>
                                 <div className="hidden sm:block text-left">
-                                    <p className="text-xs font-medium leading-none text-foreground">John Store</p>
+                                    <p className="text-xs font-medium leading-none text-foreground">{vendor?.store_name || 'Loading...'}</p>
                                 </div>
                                 <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:block" />
                             </button>
@@ -174,8 +244,8 @@ export default function VendorDashboardLayout({
                                         className="absolute right-0 mt-2 w-48 bg-card rounded-xl border border-border pb-1 shadow-lg shadow-primary/5 py-1 z-50 origin-top-right"
                                     >
                                         <div className="px-3 py-2 border-b border-border/50 mb-1">
-                                            <p className="text-xs font-medium text-foreground">John Store</p>
-                                            <p className="text-[10px] text-muted-foreground truncate">john@example.com</p>
+                                            <p className="text-xs font-medium text-foreground">{vendor?.store_name}</p>
+                                            <p className="text-[10px] text-muted-foreground truncate">{vendor?.email}</p>
                                         </div>
                                         <Link
                                             href="/vendor/dashboard/settings"

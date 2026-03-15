@@ -3,12 +3,13 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Store, Mail, Lock, ArrowRight, Loader2, Sparkles, CheckCircle2 } from "lucide-react"
+import { Store, Mail, Lock, ArrowRight, Loader2, Sparkles, CheckCircle2, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { setVendorSession } from "@/app/actions/auth"
+import { checkVendorStatus } from "@/app/actions/vendor"
 
 export default function VendorLoginPage() {
     const [isRegister, setIsRegister] = useState(false)
@@ -17,6 +18,7 @@ export default function VendorLoginPage() {
     const [storeName, setStoreName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [showPassword, setShowPassword] = useState(false)
     const router = useRouter()
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -25,10 +27,23 @@ export default function VendorLoginPage() {
         setError("")
 
         try {
-            // Simulate login/registration
-            await new Promise((resolve) => setTimeout(resolve, 1500))
+            // 1. Check vendor status and verify password hash in DB
+            const { data, error: statusError } = await checkVendorStatus(email, password);
 
-            const success = await setVendorSession();
+            if (statusError) {
+                setError(statusError);
+                setIsLoading(false);
+                return;
+            }
+
+            if (!data) {
+                setError("Account not found. Please apply first.");
+                setIsLoading(false);
+                return;
+            }
+
+            // 2. If approved, set session
+            const success = await setVendorSession(data);
             if (success) {
                 router.push("/vendor/dashboard")
                 router.refresh()
@@ -133,14 +148,21 @@ export default function VendorLoginPage() {
                                 </div>
                                 <div className="relative group">
                                     <Input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         required
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="pl-11 h-12 bg-slate-50 border-slate-200 focus:bg-white transition-all rounded-xl"
+                                        className="pl-11 pr-11 h-12 bg-slate-50 border-slate-200 focus:bg-white transition-all rounded-xl"
                                         placeholder="••••••••"
                                     />
                                     <Lock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
                                 </div>
                             </div>
 
@@ -162,13 +184,13 @@ export default function VendorLoginPage() {
 
                         <div className="mt-8 pt-6 border-t border-slate-100 text-center">
                             <p className="text-sm text-slate-500 font-medium">
-                                {isRegister ? "Already a partner?" : "New to ScanMart?"}{" "}
-                                <button
-                                    onClick={() => setIsRegister(!isRegister)}
+                                New to ScanMart?{" "}
+                                <Link
+                                    href="/vendor/apply"
                                     className="text-primary font-bold hover:underline"
                                 >
-                                    {isRegister ? "Sign In" : "Apply Now"}
-                                </button>
+                                    Apply Now
+                                </Link>
                             </p>
                         </div>
                     </CardContent>
