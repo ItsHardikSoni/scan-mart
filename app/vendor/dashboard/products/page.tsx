@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Plus, Search, Edit2, Trash2, PackageOpen, Filter, X, Loader2, Barcode, CheckCircle2, AlertCircle
+    Plus, Search, Edit2, Trash2, PackageOpen, Filter, X, Loader2, Barcode, CheckCircle2, AlertCircle, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { getVendorInfo } from '@/app/actions/vendor';
 
 // Initial state for new product
 const initialProductState = {
@@ -27,9 +29,12 @@ export default function VendorProductsPage() {
     const [formData, setFormData] = useState(initialProductState);
     const [inventory, setInventory] = useState<any[]>([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
 
     // Fetch local inventory on mount
-    const fetchInventory = async () => {
+    const fetchInventory = async (isManual = false) => {
+        if (isManual) setIsRefreshing(true);
         try {
             const res = await fetch('/api/v0/products');
             if (res.ok) {
@@ -40,11 +45,43 @@ export default function VendorProductsPage() {
             console.error('Failed to fetch inventory', err);
         } finally {
             setIsInitialLoading(false);
+            if (isManual) setIsRefreshing(false);
         }
     };
 
     useEffect(() => {
         fetchInventory();
+
+        // Real-time synchronization
+        let channel: any;
+
+        const setupRealtime = async () => {
+            const { data: vendor } = await getVendorInfo();
+            if (!vendor || !vendor.username) return;
+
+            channel = supabase
+                .channel(`inventory_changes_${vendor.username}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'vendor_inventory',
+                        filter: `vendor_id=eq.${vendor.username}`
+                    },
+                    () => {
+                        console.log('Inventory change detected, refreshing...');
+                        fetchInventory();
+                    }
+                )
+                .subscribe();
+        };
+
+        setupRealtime();
+
+        return () => {
+            if (channel) supabase.removeChannel(channel);
+        };
     }, []);
 
     // Handle barcode lookup
@@ -84,6 +121,21 @@ export default function VendorProductsPage() {
                 setIsCheckingBarcode(false);
             }
         }
+    };
+
+    const handleEditProduct = (item: any) => {
+        setFormData({
+            barcode: item.barcode,
+            product_name: item.product_name,
+            brand: item.brand,
+            quantity: item.quantity,
+            category: item.category,
+            price: item.price.toString(),
+            stock: item.stock.toString(),
+            status: item.status
+        });
+        setModalMode('edit');
+        setIsAddModalOpen(true);
     };
 
     const handleSaveProduct = async (e: React.FormEvent) => {
@@ -155,16 +207,27 @@ export default function VendorProductsPage() {
                     <p className="text-muted-foreground mt-1 text-xs">Manage your store products and stock levels.</p>
                 </div>
 
-                <button
-                    onClick={() => {
-                        setFormData(initialProductState);
-                        setIsAddModalOpen(true);
-                    }}
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30 h-9 px-3 py-1.5 gap-2 w-full sm:w-auto"
-                >
-                    <Plus className="h-3 w-3" />
-                    New Product
-                </button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                        onClick={() => fetchInventory(true)}
+                        disabled={isRefreshing}
+                        className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-border text-foreground hover:bg-muted/50 h-9 px-3 py-1.5 gap-2 flex-1 sm:flex-none"
+                    >
+                        <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </button>
+                    <button
+                        onClick={() => {
+                            setFormData(initialProductState);
+                            setModalMode('add');
+                            setIsAddModalOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30 h-9 px-3 py-1.5 gap-2 flex-1 sm:flex-none"
+                    >
+                        <Plus className="h-3 w-3" />
+                        New Product
+                    </button>
+                </div>
             </div>
 
             {/* Filters and Search */}
@@ -269,7 +332,10 @@ export default function VendorProductsPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                                <button className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all h-9 w-9 flex items-center justify-center border border-transparent hover:border-primary/20">
+                                                <button
+                                                    onClick={() => handleEditProduct(item)}
+                                                    className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all h-9 w-9 flex items-center justify-center border border-transparent hover:border-primary/20"
+                                                >
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
                                                 <button
@@ -310,8 +376,12 @@ export default function VendorProductsPage() {
 
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
-                                        <h2 className="text-xl font-bold text-foreground">Product Management</h2>
-                                        <p className="text-sm text-muted-foreground mt-1">Enter barcode to auto-fill details.</p>
+                                        <h2 className="text-xl font-bold text-foreground">
+                                            {modalMode === 'edit' ? 'Edit Product' : 'Add Product'}
+                                        </h2>
+                                        <p className="text-sm text-muted-foreground mt-1 text-xs">
+                                            {modalMode === 'edit' ? 'Update your product details and inventory.' : 'Enter barcode to auto-fill details.'}
+                                        </p>
                                     </div>
                                     <button
                                         onClick={() => setIsAddModalOpen(false)}
@@ -338,7 +408,8 @@ export default function VendorProductsPage() {
                                                     type="text"
                                                     value={formData.barcode}
                                                     onChange={handleBarcodeChange}
-                                                    className="w-full flex h-10 rounded-xl border border-input bg-background/50 pl-10 pr-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                                                    disabled={modalMode === 'edit'}
+                                                    className="w-full flex h-10 rounded-xl border border-input bg-background/50 pl-10 pr-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Scan or type barcode..."
                                                 />
                                             </div>
@@ -444,7 +515,7 @@ export default function VendorProductsPage() {
                                             ) : (
                                                 <>
                                                     <CheckCircle2 className="h-4 w-4" />
-                                                    Sync & Save
+                                                    {modalMode === 'edit' ? 'Update Changes' : 'Sync & Save'}
                                                 </>
                                             )}
                                         </button>

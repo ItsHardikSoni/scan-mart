@@ -110,6 +110,22 @@ export async function updateVendor(vendorId: string, updateData: any) {
             .eq('id', vendorId);
 
         if (error) throw error;
+
+        // If username was updated, we MUST refresh the session cookie
+        // because the product APIs rely on the username in the session.
+        if (updateData.username) {
+            const { data: freshVendor, error: fetchError } = await supabase
+                .from('vendors')
+                .select('id, username, store_name, email, is_approved, status')
+                .eq('id', vendorId)
+                .single();
+
+            if (!fetchError && freshVendor) {
+                const { setVendorSession } = await import('./auth');
+                await setVendorSession(freshVendor);
+            }
+        }
+
         return { success: true };
     } catch (err: any) {
         return { error: err.message };

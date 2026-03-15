@@ -5,8 +5,29 @@ import { cookies } from 'next/headers';
 // Helper to check for Admin or Vendor session
 async function getSession() {
     const cookieStore = await cookies();
-    if (cookieStore.has('admin_session')) return { role: 'admin', id: 'admin_user' };
-    if (cookieStore.has('vendor_session')) return { role: 'vendor', id: 'vendor_user' }; // Mock ID
+
+    // 1. Try to get Vendor session first to avoid "Admin overflow" for vendors
+    const vendorSession = cookieStore.get('vendor_session')?.value;
+    if (vendorSession) {
+        try {
+            const data = JSON.parse(vendorSession);
+            if (data && data.username) {
+                return {
+                    role: 'vendor',
+                    id: data.id,
+                    username: data.username
+                };
+            }
+        } catch (e) {
+            console.error('Failed to parse vendor session:', e);
+        }
+    }
+
+    // 2. Check Admin
+    if (cookieStore.has('admin_session')) {
+        return { role: 'admin', id: 'admin_user' };
+    }
+
     return null;
 }
 
@@ -36,21 +57,17 @@ export async function GET(
                 )
             `)
             .eq('barcode', barcode)
-            .eq('vendor_id', session.id)
+            .eq('vendor_id', (session as any).username)
             .single();
 
         if (!error && data) {
-            // Flatten the response for the UI
+            // Flatten the response for the UI - Return ONLY specific metadata fields
             return NextResponse.json({
                 barcode: (data.products as any).barcode,
                 product_name: (data.products as any).product_name,
                 brand: (data.products as any).brand,
                 quantity: (data.products as any).quantity,
-                category: (data.products as any).category,
-                price: data.price,
-                stock: data.stock,
-                status: data.status,
-                source: 'local'
+                category: (data.products as any).category
             });
         }
     }
@@ -66,7 +83,7 @@ export async function GET(
         return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ ...data, source: 'global' });
+    return NextResponse.json(data);
 }
 
 // POST/PUT /api/v0/products/{barcode}.json
@@ -100,24 +117,52 @@ export async function POST(
     }
 
     // Step B: Update Vendor Inventory (if vendor)
+    let inventorySynced = false;
     if (session.role === 'vendor' || (session.role === 'admin' && body.price)) {
-        const { error: invError } = await supabase
+        const vendorUsername = (session as any).username;
+
+        if (!vendorUsername && session.role === 'vendor') {
+            console.error('CRITICAL: Vendor username missing in session:', session);
+            return NextResponse.json({
+                error: 'Session data corrupted. Please log out and log back in to refresh your vendor profile.'
+            }, { status: 401 });
+        }
+
+        // Use 'admin' as fallback identifier if user is admin
+        const identifier = vendorUsername || 'admin_user';
+
+        console.log(`DEBUG: Attempting upsert for [${identifier}] on barcode [${barcode}]`);
+
+        const { data: invData, error: invError } = await supabase
             .from('vendor_inventory')
             .upsert({
-                vendor_id: session.id,
+                vendor_id: identifier,
                 barcode,
                 price: body.price,
                 stock: body.stock,
                 status: body.status || 'Active',
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'vendor_id,barcode' });
+            }, { onConflict: 'vendor_id,barcode' })
+            .select();
 
         if (invError) {
-            return NextResponse.json({ error: invError.message }, { status: 400 });
+            console.error('DATABASE ERROR (vendor_inventory):', invError);
+            return NextResponse.json({
+                error: `Inventory storage failed: ${invError.message}. Details: ${invError.details || 'None'}. Hint: ${invError.hint || 'None'}`
+            }, { status: 400 });
         }
+
+        console.log('DEBUG: Inventory upsert successful:', invData);
+        inventorySynced = true;
+    } else {
+        console.log('DEBUG: Skipping Step B. Role:', session.role, 'Price:', body.price);
     }
 
-    return NextResponse.json({ message: 'Success', barcode });
+    return NextResponse.json({
+        message: 'Success',
+        barcode,
+        inventorySynced
+    });
 }
 
 // DELETE /api/v0/products/{barcode}.json
@@ -139,7 +184,7 @@ export async function DELETE(
             .from('vendor_inventory')
             .delete()
             .eq('barcode', barcode)
-            .eq('vendor_id', session.id);
+            .eq('vendor_id', (session as any).username);
 
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
         return NextResponse.json({ message: 'Local inventory deleted' });
