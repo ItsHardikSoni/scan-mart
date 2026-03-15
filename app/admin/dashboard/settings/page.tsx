@@ -9,7 +9,9 @@ import {
     User,
     Lock,
     Bell,
-    Shield
+    Shield,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getAdminProfile, updateAdminProfile, changeAdminPassword, getAdminStats, getRecentVendors } from '@/app/actions/admin';
@@ -21,6 +23,12 @@ export default function AdminSettingsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [admin, setAdmin] = useState<any>(null);
     const [passwords, setPasswords] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    const [passwordErrors, setPasswordErrors] = useState<{ oldPassword?: string; confirmPassword?: string }>({});
+    const [showPasswords, setShowPasswords] = useState({ oldPassword: false, newPassword: false, confirmPassword: false });
+    const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+    const toggleShow = (field: keyof typeof showPasswords) =>
+        setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
 
     useEffect(() => {
         const fetchAdmin = async () => {
@@ -44,20 +52,44 @@ export default function AdminSettingsPage() {
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
+        const errors: { oldPassword?: string; confirmPassword?: string } = {};
+
         if (passwords.newPassword !== passwords.confirmPassword) {
-            toast.error("Passwords do not match");
+            errors.confirmPassword = 'New password and confirm password do not match.';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setPasswordErrors(errors);
             return;
         }
+
+        setPasswordErrors({});
         setIsSaving(true);
         const res = await changeAdminPassword({
             oldPassword: passwords.oldPassword,
             newPassword: passwords.newPassword
         });
         if (res.success) {
-            toast.success("Password changed!");
+            toast.success("Password changed successfully!");
             setPasswords({ oldPassword: '', newPassword: '', confirmPassword: '' });
+            setPasswordErrors({});
+            setShowPasswords({ oldPassword: false, newPassword: false, confirmPassword: false });
+            setPasswordSuccess(true);
+            setTimeout(() => setPasswordSuccess(false), 4000);
         } else {
-            toast.error(res.error || "Failed to change password");
+            // Surface wrong-password error inline under the Current Password field
+            const msg = res.error || 'Failed to change password';
+            const isWrongPassword = msg.toLowerCase().includes('incorrect') ||
+                msg.toLowerCase().includes('wrong') ||
+                msg.toLowerCase().includes('invalid') ||
+                msg.toLowerCase().includes('mismatch') ||
+                msg.toLowerCase().includes('old password') ||
+                msg.toLowerCase().includes('current password');
+            if (isWrongPassword) {
+                setPasswordErrors({ oldPassword: 'Current password is incorrect. Please try again.' });
+            } else {
+                toast.error(msg);
+            }
         }
         setIsSaving(false);
     };
@@ -184,34 +216,89 @@ export default function AdminSettingsPage() {
                         <form onSubmit={handleChangePassword} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Current Password</label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={passwords.oldPassword}
-                                    onChange={(e) => setPasswords({ ...passwords, oldPassword: e.target.value })}
-                                    className="w-full h-11 bg-background/50 border border-border/50 rounded-xl px-4 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showPasswords.oldPassword ? 'text' : 'password'}
+                                        required
+                                        value={passwords.oldPassword}
+                                        onChange={(e) => {
+                                            setPasswords({ ...passwords, oldPassword: e.target.value });
+                                            if (passwordErrors.oldPassword) setPasswordErrors(prev => ({ ...prev, oldPassword: undefined }));
+                                        }}
+                                        className={`w-full h-11 bg-background/50 border rounded-xl px-4 pr-10 text-xs font-medium focus:outline-none focus:ring-2 transition-all shadow-inner ${passwordErrors.oldPassword
+                                            ? 'border-destructive/70 focus:ring-destructive/20 focus:border-destructive'
+                                            : 'border-border/50 focus:ring-primary/20 focus:border-primary'
+                                            }`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleShow('oldPassword')}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                        tabIndex={-1}
+                                    >
+                                        {showPasswords.oldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                                {passwordErrors.oldPassword && (
+                                    <p className="text-[11px] font-medium text-destructive ml-1 flex items-center gap-1">
+                                        <span>⚠</span> {passwordErrors.oldPassword}
+                                    </p>
+                                )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">New Password</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={passwords.newPassword}
-                                        onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                                        className="w-full h-11 bg-background/50 border border-border/50 rounded-xl px-4 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswords.newPassword ? 'text' : 'password'}
+                                            required
+                                            value={passwords.newPassword}
+                                            onChange={(e) => {
+                                                setPasswords({ ...passwords, newPassword: e.target.value });
+                                                if (passwordErrors.confirmPassword) setPasswordErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                                            }}
+                                            className="w-full h-11 bg-background/50 border border-border/50 rounded-xl px-4 pr-10 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleShow('newPassword')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                            tabIndex={-1}
+                                        >
+                                            {showPasswords.newPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Confirm Password</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={passwords.confirmPassword}
-                                        onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                                        className="w-full h-11 bg-background/50 border border-border/50 rounded-xl px-4 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswords.confirmPassword ? 'text' : 'password'}
+                                            required
+                                            value={passwords.confirmPassword}
+                                            onChange={(e) => {
+                                                setPasswords({ ...passwords, confirmPassword: e.target.value });
+                                                if (passwordErrors.confirmPassword) setPasswordErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                                            }}
+                                            className={`w-full h-11 bg-background/50 border rounded-xl px-4 pr-10 text-xs font-medium focus:outline-none focus:ring-2 transition-all shadow-inner ${passwordErrors.confirmPassword
+                                                ? 'border-destructive/70 focus:ring-destructive/20 focus:border-destructive'
+                                                : 'border-border/50 focus:ring-primary/20 focus:border-primary'
+                                                }`}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleShow('confirmPassword')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                            tabIndex={-1}
+                                        >
+                                            {showPasswords.confirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                    </div>
+                                    {passwordErrors.confirmPassword && (
+                                        <p className="text-[11px] font-medium text-destructive ml-1 flex items-center gap-1">
+                                            <span>⚠</span> {passwordErrors.confirmPassword}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <div className="pt-2 flex justify-end">
