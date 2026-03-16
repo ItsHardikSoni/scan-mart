@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Store, User, Mail, Lock, Phone, MapPin, Building2, Globe, Send, Loader2, CheckCircle2, ChevronRight, LayoutDashboard, Clock, Eye, EyeOff } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import Link from 'next/link';
-import { registerVendor } from '@/app/actions/vendor';
+import { registerVendor, sendVendorEmailOtp, verifyVendorEmailOtp } from '@/app/actions/vendor';
 import { toast } from 'sonner';
 
 export default function VendorApplyPage() {
@@ -14,6 +14,12 @@ export default function VendorApplyPage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [otp, setOtp] = useState('');
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
+    const [otpCooldown, setOtpCooldown] = useState(0);
+    const [hasRequestedOtp, setHasRequestedOtp] = useState(false);
     const [formData, setFormData] = useState({
         username: '',
         store_name: '',
@@ -37,12 +43,88 @@ export default function VendorApplyPage() {
                 return newErrors;
             });
         }
+        if (e.target.name === 'email') {
+            setIsEmailVerified(false);
+            setOtp('');
+            setOtpCooldown(0);
+            setHasRequestedOtp(false);
+            setFieldErrors(prev => {
+                const next = { ...prev };
+                delete next.emailOtp;
+                return next;
+            });
+        }
+    };
+
+    useEffect(() => {
+        if (otpCooldown <= 0) return;
+        const id = setInterval(() => {
+            setOtpCooldown(prev => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(id);
+    }, [otpCooldown]);
+
+    const handleSendOtp = async () => {
+        if (!formData.email) {
+            setFieldErrors(prev => ({ ...prev, email: 'Please enter an email first.' }));
+            return;
+        }
+        try {
+            setIsSendingOtp(true);
+            const res = await sendVendorEmailOtp(formData.email);
+            if ('error' in res && res.error) {
+                setFieldErrors(prev => ({ ...prev, emailOtp: res.error }));
+            } else {
+                setHasRequestedOtp(true);
+                setOtpCooldown(60);
+                setFieldErrors(prev => {
+                    const next = { ...prev };
+                    delete next.emailOtp;
+                    return next;
+                });
+                toast.success('OTP sent to your email.');
+            }
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!otp) {
+            setFieldErrors(prev => ({ ...prev, emailOtp: 'Please enter the OTP.' }));
+            return;
+        }
+        try {
+            setIsVerifyingOtp(true);
+            const res = await verifyVendorEmailOtp(formData.email, otp);
+            if ('error' in res && res.error) {
+                setIsEmailVerified(false);
+                setFieldErrors(prev => ({ ...prev, emailOtp: res.error }));
+            } else {
+                setIsEmailVerified(true);
+                setFieldErrors(prev => {
+                    const next = { ...prev };
+                    delete next.emailOtp;
+                    return next;
+                });
+                toast.success('Email verified successfully.');
+            }
+        } finally {
+            setIsVerifyingOtp(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
         setFieldErrors({});
+
+        if (!isEmailVerified) {
+            setFieldErrors({ emailOtp: 'Please verify your email with OTP before applying.' });
+            toast.error('Please verify your email with OTP.');
+            return;
+        }
+
+        setIsLoading(true);
 
         const result = await registerVendor(formData);
 
@@ -113,7 +195,7 @@ export default function VendorApplyPage() {
                         <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
                             <Store className="w-6 h-6" />
                         </div>
-                        <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
+                        <span className="text-2xl font-black bg-clip-text text-transparent bg-linear-to-r from-slate-900 to-slate-600">
                             ScanMart <span className="text-primary font-medium tracking-tight ml-1 text-sm">Partner</span>
                         </span>
                     </Link>
@@ -137,9 +219,82 @@ export default function VendorApplyPage() {
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold text-slate-700 ml-1">Email</label>
-                                    <Input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="owner@store.com" className={`rounded-xl bg-slate-50/50 ${fieldErrors.email ? 'border-red-500 ring-red-500' : ''}`} />
+                                    {isEmailVerified ? (
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                required
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                placeholder="owner@store.com"
+                                                className={`rounded-xl bg-slate-50/50 ${fieldErrors.email ? 'border-red-500 ring-red-500' : ''}`}
+                                                disabled
+                                            />
+                                            <span className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200">
+                                                <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <Input
+                                                required
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                placeholder="owner@store.com"
+                                                className={`rounded-xl bg-slate-50/50 ${fieldErrors.email ? 'border-red-500 ring-red-500' : ''}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleSendOtp}
+                                                disabled={isSendingOtp || !formData.email || otpCooldown > 0}
+                                                className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white flex items-center gap-1 disabled:opacity-40"
+                                            >
+                                                {isSendingOtp ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <Mail className="w-3 h-3" />
+                                                )}
+                                                {isSendingOtp
+                                                    ? 'Sending'
+                                                    : otpCooldown > 0
+                                                        ? `${otpCooldown}s`
+                                                        : hasRequestedOtp
+                                                            ? 'Re-verify'
+                                                            : 'Verify'}
+                                            </button>
+                                        </div>
+                                    )}
                                     {fieldErrors.email && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.email}</p>}
                                 </div>
+                                {!isEmailVerified && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-700 ml-1">Email OTP</label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                type="text"
+                                                inputMode="numeric"
+                                                maxLength={6}
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                                placeholder="Enter 6-digit code"
+                                                className={`rounded-xl bg-slate-50/50 ${fieldErrors.emailOtp ? 'border-red-500 ring-red-500' : ''}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleVerifyOtp}
+                                                disabled={isVerifyingOtp || !otp || !formData.email}
+                                                className="px-3 py-2 rounded-xl text-xs font-bold bg-primary text-white flex items-center gap-1 disabled:opacity-40"
+                                            >
+                                                {isVerifyingOtp ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                                                {isVerifyingOtp ? 'Checking' : 'Verify OTP'}
+                                            </button>
+                                        </div>
+                                        {fieldErrors.emailOtp && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.emailOtp}</p>}
+                                    </div>
+                                )}
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold text-slate-700 ml-1">Password</label>
                                     <div className="relative group">

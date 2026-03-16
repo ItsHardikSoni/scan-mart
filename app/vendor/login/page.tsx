@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Store, Mail, Lock, ArrowRight, Loader2, Sparkles, CheckCircle2, Eye, EyeOff } from "lucide-react"
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { setVendorSession } from "@/app/actions/auth"
-import { checkVendorStatus } from "@/app/actions/vendor"
+import { checkVendorStatus, sendVendorPasswordResetOtp, verifyVendorPasswordResetOtp, resetVendorPassword } from "@/app/actions/vendor"
 
 export default function VendorLoginPage() {
     const [isRegister, setIsRegister] = useState(false)
@@ -19,12 +19,36 @@ export default function VendorLoginPage() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
+    const [isForgotMode, setIsForgotMode] = useState(false)
+    const [resetOtp, setResetOtp] = useState("")
+    const [isSendingResetOtp, setIsSendingResetOtp] = useState(false)
+    const [isVerifyingResetOtp, setIsVerifyingResetOtp] = useState(false)
+    const [isResetOtpVerified, setIsResetOtpVerified] = useState(false)
+    const [showNewPassword, setShowNewPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const [resetCooldown, setResetCooldown] = useState(0)
+    const [newPassword, setNewPassword] = useState("")
+    const [confirmPassword, setConfirmPassword] = useState("")
+    const [isResettingPassword, setIsResettingPassword] = useState(false)
     const router = useRouter()
+
+    useEffect(() => {
+        if (resetCooldown <= 0) return
+        const id = setInterval(() => {
+            setResetCooldown(prev => (prev > 0 ? prev - 1 : 0))
+        }, 1000)
+        return () => clearInterval(id)
+    }, [resetCooldown])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
         setError("")
+
+        if (isForgotMode) {
+            setIsLoading(false)
+            return
+        }
 
         try {
             // 1. Check vendor status and verify password hash in DB
@@ -57,6 +81,80 @@ export default function VendorLoginPage() {
         }
     }
 
+    const handleSendResetOtp = async () => {
+        setError("")
+        if (!email) {
+            setError("Please enter your email first.")
+            return
+        }
+        try {
+            setIsSendingResetOtp(true)
+            const res = await sendVendorPasswordResetOtp(email)
+            if ("error" in res && res.error) {
+                setError(res.error)
+            } else {
+                setResetCooldown(60)
+                setIsResetOtpVerified(false)
+                setError("")
+            }
+        } finally {
+            setIsSendingResetOtp(false)
+        }
+    }
+
+    const handleVerifyResetOtp = async () => {
+        setError("")
+        if (!email || !resetOtp) {
+            setError("Please enter the OTP sent to your email.")
+            return
+        }
+        try {
+            setIsVerifyingResetOtp(true)
+            const res = await verifyVendorPasswordResetOtp(email, resetOtp)
+            if ("error" in res && res.error) {
+                setIsResetOtpVerified(false)
+                setError(res.error)
+            } else {
+                setIsResetOtpVerified(true)
+                setError("")
+            }
+        } finally {
+            setIsVerifyingResetOtp(false)
+        }
+    }
+
+    const handleResetPassword = async () => {
+        setError("")
+        if (!isResetOtpVerified) {
+            setError("Please verify OTP first.")
+            return
+        }
+        if (!newPassword || newPassword.length < 6) {
+            setError("New password must be at least 6 characters.")
+            return
+        }
+        if (newPassword !== confirmPassword) {
+            setError("New password and confirm password do not match.")
+            return
+        }
+        try {
+            setIsResettingPassword(true)
+            const res = await resetVendorPassword(email, newPassword)
+            if ("error" in res && res.error) {
+                setError(res.error)
+            } else {
+                setError("")
+                setIsForgotMode(false)
+                setIsResetOtpVerified(false)
+                setResetOtp("")
+                setNewPassword("")
+                setConfirmPassword("")
+            }
+        } finally {
+            setIsResettingPassword(false)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
             {/* Background Decorative Elements */}
@@ -76,12 +174,12 @@ export default function VendorLoginPage() {
                         <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
                             <Store className="w-6 h-6" />
                         </div>
-                        <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
+                        <span className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-slate-900 to-slate-700">
                             ScanMart
                         </span>
                     </Link>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                        {isRegister ? "Join as a Partner" : "Vendor Portal"}
+                        {isForgotMode ? "Reset Password" : isRegister ? "Join as a Partner" : "Vendor Portal"}
                     </h1>
                     <p className="text-slate-500 mt-2">
                         {isRegister
@@ -137,49 +235,183 @@ export default function VendorLoginPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between ml-1">
-                                    <label className="text-sm font-semibold text-slate-700">Password</label>
-                                    {!isRegister && (
-                                        <Link href="#" className="text-xs font-semibold text-primary hover:underline">
-                                            Forgot?
-                                        </Link>
-                                    )}
+                            {!isForgotMode && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between ml-1">
+                                        <label className="text-sm font-semibold text-slate-700">Password</label>
+                                        {!isRegister && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsForgotMode(true)
+                                                    setError("")
+                                                    setResetOtp("")
+                                                    setNewPassword("")
+                                                    setConfirmPassword("")
+                                                    setIsResetOtpVerified(false)
+                                                }}
+                                                className="text-xs font-semibold text-primary hover:underline"
+                                            >
+                                                Forgot?
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="relative group">
+                                        <Input
+                                            type={showPassword ? "text" : "password"}
+                                            required
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="pl-11 pr-11 h-12 bg-slate-50 border-slate-200 focus:bg-white transition-all rounded-xl"
+                                            placeholder="••••••••"
+                                        />
+                                        <Lock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="relative group">
-                                    <Input
-                                        type={showPassword ? "text" : "password"}
-                                        required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="pl-11 pr-11 h-12 bg-slate-50 border-slate-200 focus:bg-white transition-all rounded-xl"
-                                        placeholder="••••••••"
-                                    />
-                                    <Lock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                                    >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
-                                </div>
-                            </div>
+                            )}
 
-                            <Button
-                                type="submit"
-                                className="w-full h-12 rounded-xl text-md font-bold shadow-lg shadow-primary/20 mt-2 transition-all active:scale-[0.98]"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                    <span className="flex items-center gap-2">
-                                        {isRegister ? "Launch Store" : "Secure Sign In"}
-                                        <ArrowRight className="w-4 h-4" />
-                                    </span>
-                                )}
-                            </Button>
+                            {isForgotMode && (
+                                <>
+                                    {!isResetOtpVerified && (
+                                        <>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-slate-700 ml-1">Reset via OTP</label>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        onClick={handleSendResetOtp}
+                                                        disabled={isSendingResetOtp || !email || resetCooldown > 0}
+                                                        className="flex-1 h-10 text-xs font-bold"
+                                                    >
+                                                        {isSendingResetOtp ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                        ) : resetCooldown > 0 ? (
+                                                            `Resend in ${resetCooldown}s`
+                                                        ) : (
+                                                            "Send OTP"
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            setIsForgotMode(false)
+                                                            setError("")
+                                                        }}
+                                                        className="h-10 text-xs font-semibold"
+                                                    >
+                                                        Back
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-slate-700 ml-1">Enter OTP</label>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        maxLength={6}
+                                                        value={resetOtp}
+                                                        onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, ""))}
+                                                        className="h-11"
+                                                        placeholder="6-digit code"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        onClick={handleVerifyResetOtp}
+                                                        disabled={isVerifyingResetOtp || !resetOtp}
+                                                        className="h-11 text-xs font-semibold"
+                                                    >
+                                                        {isVerifyingResetOtp ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify OTP"}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {isResetOtpVerified && (
+                                        <>
+                                            <div className="mb-3 flex items-center gap-2 text-emerald-600">
+                                                <CheckCircle2 className="w-5 h-5" />
+                                                <span className="font-semibold">Verified</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-slate-700 ml-1">New Password</label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type={showNewPassword ? "text" : "password"}
+                                                        value={newPassword}
+                                                        onChange={(e) => setNewPassword(e.target.value)}
+                                                        className="h-11 pr-10"
+                                                        placeholder="Enter new password"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                                    >
+                                                        {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-slate-700 ml-1">Confirm Password</label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type={showConfirmPassword ? "text" : "password"}
+                                                        value={confirmPassword}
+                                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                                        className="h-11 pr-10"
+                                                        placeholder="Confirm new password"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                                    >
+                                                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                onClick={handleResetPassword}
+                                                disabled={isResettingPassword}
+                                                className="w-full h-11 rounded-xl text-sm font-bold mt-2"
+                                            >
+                                                {isResettingPassword ? <Loader2 className="w-5 h-5 animate-spin" /> : "Reset Password"}
+                                            </Button>
+                                        </>
+                                    )}
+                                </>
+                            )}
+
+                            {!isForgotMode && (
+                                <Button
+                                    type="submit"
+                                    className="w-full h-12 rounded-xl text-md font-bold shadow-lg shadow-primary/20 mt-2 transition-all active:scale-[0.98]"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            {isRegister ? "Launch Store" : "Secure Sign In"}
+                                            <ArrowRight className="w-4 h-4" />
+                                        </span>
+                                    )}
+                                </Button>
+                            )}
                         </form>
 
                         <div className="mt-8 pt-6 border-t border-slate-100 text-center">

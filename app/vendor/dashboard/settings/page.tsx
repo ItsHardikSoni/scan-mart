@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-    Settings, Store, CreditCard, Bell, Shield, MapPin, CheckCircle2, Save, Loader2, Edit2
+    Settings, Store, CreditCard, Bell, Shield, MapPin, CheckCircle2, Save, Loader2, Edit2, Mail
 } from 'lucide-react';
-import { getVendorInfo } from '@/app/actions/vendor';
+import { getVendorInfo, sendVendorEmailOtp, verifyVendorEmailOtp } from '@/app/actions/vendor';
 import { toast } from 'sonner';
 
 export default function VendorSettingsPage() {
@@ -15,17 +15,32 @@ export default function VendorSettingsPage() {
     const [isEditMode, setIsEditMode] = useState(false);
     const [originalVendor, setOriginalVendor] = useState<any>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [otp, setOtp] = useState('');
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
+    const [otpCooldown, setOtpCooldown] = useState(0);
+    const [hasRequestedOtp, setHasRequestedOtp] = useState(false);
 
     useEffect(() => {
         const fetchVendor = async () => {
             const result = await getVendorInfo();
             if (result.data) {
                 setVendor(result.data);
+                setOriginalVendor(result.data);
             }
             setIsLoading(false);
         };
         fetchVendor();
     }, []);
+
+    useEffect(() => {
+        if (otpCooldown <= 0) return;
+        const id = setInterval(() => {
+            setOtpCooldown(prev => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(id);
+    }, [otpCooldown]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -70,11 +85,77 @@ export default function VendorSettingsPage() {
     const handleDiscard = () => {
         setVendor({ ...originalVendor });
         setFieldErrors({});
+        setIsEmailVerified(false);
+        setOtp('');
+        setOtpCooldown(0);
+        setHasRequestedOtp(false);
         setIsEditMode(false);
     };
 
     const handleChange = (field: string, value: string) => {
         setVendor((prev: any) => ({ ...prev, [field]: value }));
+
+        if (field === 'email') {
+            setIsEmailVerified(false);
+            setOtp('');
+            setOtpCooldown(0);
+            setHasRequestedOtp(false);
+            setFieldErrors(prev => {
+                const next = { ...prev };
+                delete next.email;
+                return next;
+            });
+        }
+    };
+
+    const handleSendOtp = async () => {
+        if (!vendor?.email) {
+            setFieldErrors(prev => ({ ...prev, email: 'Please enter an email first.' }));
+            return;
+        }
+        try {
+            setIsSendingOtp(true);
+            const res = await sendVendorEmailOtp(vendor.email);
+            if ('error' in res && res.error) {
+                setFieldErrors(prev => ({ ...prev, email: res.error }));
+            } else {
+                setHasRequestedOtp(true);
+                setOtpCooldown(60);
+                setFieldErrors(prev => {
+                    const next = { ...prev };
+                    delete next.email;
+                    return next;
+                });
+                toast.success('OTP sent to your email.');
+            }
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!vendor?.email || !otp) {
+            setFieldErrors(prev => ({ ...prev, email: 'Please enter the OTP.' }));
+            return;
+        }
+        try {
+            setIsVerifyingOtp(true);
+            const res = await verifyVendorEmailOtp(vendor.email, otp);
+            if ('error' in res && res.error) {
+                setIsEmailVerified(false);
+                setFieldErrors(prev => ({ ...prev, email: res.error }));
+            } else {
+                setIsEmailVerified(true);
+                setFieldErrors(prev => {
+                    const next = { ...prev };
+                    delete next.email;
+                    return next;
+                });
+                toast.success('Email verified successfully.');
+            }
+        } finally {
+            setIsVerifyingOtp(false);
+        }
     };
 
     if (isLoading) {
@@ -161,14 +242,87 @@ export default function VendorSettingsPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-medium text-foreground">Contact Email</label>
-                                    <input
-                                        type="email"
-                                        value={vendor?.email || ''}
-                                        onChange={(e) => handleChange('email', e.target.value)}
-                                        disabled={!isEditMode}
-                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${!isEditMode ? 'bg-muted/30 border-transparent text-muted-foreground' : 'bg-background/50 border-input'} ${fieldErrors.email ? 'border-red-500 ring-red-500' : ''}`}
-                                    />
-                                    {fieldErrors.email && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.email}</p>}
+                                    {isEditMode ? (
+                                        <>
+                                            {isEmailVerified ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="email"
+                                                        value={vendor?.email || ''}
+                                                        onChange={(e) => handleChange('email', e.target.value)}
+                                                        disabled
+                                                        className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs bg-muted/30 border-transparent text-muted-foreground`}
+                                                    />
+                                                    <span className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200">
+                                                        <CheckCircle2 className="h-3 w-3 mr-1" /> Verified
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="email"
+                                                            value={vendor?.email || ''}
+                                                            onChange={(e) => handleChange('email', e.target.value)}
+                                                            className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 bg-background/50 border-input ${fieldErrors.email ? 'border-red-500 ring-red-500' : ''}`}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleSendOtp}
+                                                            disabled={isSendingOtp || !vendor?.email || otpCooldown > 0}
+                                                            className="px-3 py-1.5 rounded-xl text-[10px] font-bold bg-primary text-primary-foreground flex items-center gap-1 disabled:opacity-40"
+                                                        >
+                                                            {isSendingOtp ? (
+                                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                            ) : (
+                                                                <Mail className="h-3 w-3" />
+                                                            )}
+                                                            {isSendingOtp
+                                                                ? 'Sending'
+                                                                : otpCooldown > 0
+                                                                    ? `${otpCooldown}s`
+                                                                    : hasRequestedOtp
+                                                                        ? 'Re-verify'
+                                                                        : 'Verify'}
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex gap-2 mt-2">
+                                                        <input
+                                                            type="text"
+                                                            value={otp}
+                                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                                            maxLength={6}
+                                                            placeholder="Enter 6-digit OTP"
+                                                            className={`flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs bg-background/50 border-input ${fieldErrors.email ? 'border-red-500 ring-red-500' : ''}`}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleVerifyOtp}
+                                                            disabled={isVerifyingOtp || !otp || !vendor?.email}
+                                                            className="px-3 py-1.5 rounded-xl text-[10px] font-bold bg-emerald-600 text-white flex items-center gap-1 disabled:opacity-40"
+                                                        >
+                                                            {isVerifyingOtp ? (
+                                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                            ) : (
+                                                                <CheckCircle2 className="h-3 w-3" />
+                                                            )}
+                                                            {isVerifyingOtp ? 'Checking' : 'Verify OTP'}
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {fieldErrors.email && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.email}</p>}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <input
+                                                type="email"
+                                                value={vendor?.email || ''}
+                                                disabled
+                                                className="flex h-9 w-full rounded-xl border px-3 py-1.5 text-xs bg-muted/30 border-transparent text-muted-foreground"
+                                            />
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
