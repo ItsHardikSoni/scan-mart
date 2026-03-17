@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Mail, MapPin, Phone, Send, Twitter, Instagram, Linkedin, Facebook } from "lucide-react"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -44,6 +45,28 @@ const socialLinks = [
   { href: "https://facebook.com/scanmart", icon: Facebook, label: "Facebook" },
 ]
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100
+    }
+  }
+}
+
 export function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -73,100 +96,113 @@ export function ContactForm() {
   }
 
   return (
-    <section className="bg-muted/30 py-20 md:py-28">
+    <section className="bg-muted/30 py-20 md:py-28 overflow-hidden">
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Contact Form */}
-          <Card className="border-none bg-card shadow-xl">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-foreground">Send us a Message</h2>
-              <p className="mt-2 text-muted-foreground">
-                Fill out the form below and we&apos;ll get back to you shortly.
-              </p>
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <Card className="border-none bg-card shadow-xl">
+              <CardContent className="p-8">
+                <h2 className="text-2xl font-bold text-foreground">Send us a Message</h2>
+                <p className="mt-2 text-muted-foreground">
+                  Fill out the form below and we&apos;ll get back to you shortly.
+                </p>
 
-              {submitted ? (
-                <div className="mt-8 rounded-lg bg-green-50 p-6 text-center">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                    <Send className="h-6 w-6 text-green-600" />
+                {submitted ? (
+                  <div className="mt-8 rounded-lg bg-green-50 p-6 text-center">
+                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                      <Send className="h-6 w-6 text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-green-800">Message Sent!</h3>
+                    <p className="mt-2 text-green-700">
+                      Thank you for reaching out. We&apos;ll get back to you soon.
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold text-green-800">Message Sent!</h3>
-                  <p className="mt-2 text-green-700">
-                    Thank you for reaching out. We&apos;ll get back to you soon.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="mt-8">
-                  <FieldGroup>
-                    <Field>
-                      <FieldLabel htmlFor="name">Name</FieldLabel>
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        placeholder="Your name"
-                        required
-                        className="mt-2"
-                      />
-                    </Field>
+                ) : (
+                  <form onSubmit={handleSubmit} className="mt-8">
+                    <FieldGroup>
+                      <Field>
+                        <FieldLabel htmlFor="name">Name</FieldLabel>
+                        <Input
+                          id="name"
+                          name="name"
+                          type="text"
+                          placeholder="Your name"
+                          required
+                          className="mt-2"
+                        />
+                      </Field>
 
-                    <Field>
-                      <FieldLabel htmlFor="email">Email</FieldLabel>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="your@email.com"
-                        required
-                        className="mt-2"
-                      />
-                    </Field>
+                      <Field>
+                        <FieldLabel htmlFor="email">Email</FieldLabel>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          placeholder="your@email.com"
+                          required
+                          className="mt-2"
+                        />
+                      </Field>
 
-                    <Field>
-                      <FieldLabel htmlFor="subject">Subject</FieldLabel>
-                      <Input
-                        id="subject"
-                        name="subject"
-                        type="text"
-                        placeholder="What's this about?"
-                        required
-                        className="mt-2"
-                      />
-                    </Field>
+                      <Field>
+                        <FieldLabel htmlFor="subject">Subject</FieldLabel>
+                        <Input
+                          id="subject"
+                          name="subject"
+                          type="text"
+                          placeholder="What's this about?"
+                          required
+                          className="mt-2"
+                        />
+                      </Field>
 
-                    <Field>
-                      <FieldLabel htmlFor="message">Message</FieldLabel>
-                      <Textarea
-                        id="message"
-                        name="message"
-                        placeholder="How can we help you?"
-                        rows={5}
-                        required
-                        className="mt-2 resize-none"
-                      />
-                    </Field>
+                      <Field>
+                        <FieldLabel htmlFor="message">Message</FieldLabel>
+                        <Textarea
+                          id="message"
+                          name="message"
+                          placeholder="How can we help you?"
+                          rows={5}
+                          required
+                          className="mt-2 resize-none"
+                        />
+                      </Field>
 
-                    <Button
-                      type="submit"
-                      className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        "Sending..."
-                      ) : (
-                        <>
-                          Send Message
-                          <Send className="h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
-                  </FieldGroup>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+                      <Button
+                        type="submit"
+                        className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          "Sending..."
+                        ) : (
+                          <>
+                            Send Message
+                            <Send className="h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    </FieldGroup>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Contact Info */}
-          <div className="space-y-8">
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
+          >
             <div>
               <h2 className="text-2xl font-bold text-foreground">Get in Touch</h2>
               <p className="mt-2 text-muted-foreground">
@@ -174,10 +210,17 @@ export function ContactForm() {
               </p>
             </div>
 
-            <div className="space-y-6">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="space-y-6"
+            >
               {contactInfo.map((info) => (
-                <a
+                <motion.a
                   key={info.label}
+                  variants={itemVariants}
                   href={info.href}
                   className="flex items-start gap-4 rounded-lg bg-card p-4 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                 >
@@ -188,9 +231,9 @@ export function ContactForm() {
                     <p className="font-medium text-foreground">{info.label}</p>
                     <p className="text-muted-foreground">{info.value}</p>
                   </div>
-                </a>
+                </motion.a>
               ))}
-            </div>
+            </motion.div>
 
             {/* Social Links */}
             <div>
@@ -232,7 +275,7 @@ export function ContactForm() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

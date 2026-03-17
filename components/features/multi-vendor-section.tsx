@@ -8,12 +8,12 @@ import { Card, CardContent } from '@/components/ui/card'
 const features = [
   {
     title: "Vendor Account Creation",
-    description: "Launch your digital presence with sophisticated store management tools.",
+    description: "Launch your digital presence with sophisticated store management tools, including a free per-build inventory management software.",
     icon: Store,
     items: [
       { text: "Separate login dashboard", icon: LayoutDashboard },
-      { text: "Store management tools", icon: Settings2 },
-      { text: "Product management system", icon: PackagePlus },
+      { text: "Store & inventory management software", icon: Settings2 },
+      { text: "Real-time product & stock tracking", icon: PackagePlus },
       { text: "Order & transaction monitoring", icon: ReceiptText },
     ],
     color: "bg-primary dark:bg-primary",
@@ -135,8 +135,10 @@ export default function MultiVendorSection() {
           className="mt-16 text-center"
         >
           <button className="inline-flex items-center rounded-full bg-secondary px-8 py-3.5 text-sm font-semibold text-black shadow-lg shadow-primary/20 transition-all hover:bg-secondary/90 group">
-            Become a Vendor Today
-            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <a href="/vendor/apply" className="flex items-center">
+              Become a Vendor Today
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </a>
           </button>
         </motion.div>
       </div>

@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 import { useState, useEffect, useRef } from "react"
-import { Menu, X, Scan } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const navLinks = [
@@ -77,8 +78,14 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <Scan className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary overflow-hidden">
+            <Image
+              src="/icon.svg"
+              alt="ScanMart Logo"
+              width={36}
+              height={36}
+              className="h-full w-full object-cover"
+            />
           </div>
           <span className="text-xl font-bold text-foreground">ScanMart</span>
         </Link>

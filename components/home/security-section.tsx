@@ -1,4 +1,7 @@
+"use client"
+
 import { MapPin, MonitorOff, LogOut, Lock } from "lucide-react"
+import { motion } from "framer-motion"
 
 const securityFeatures = [
   {
@@ -23,37 +26,72 @@ const securityFeatures = [
   },
 ]
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0, scale: 0.95 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100
+    }
+  }
+}
+
 export function SecuritySection() {
   return (
-    <section className="bg-foreground py-20 md:py-28">
+    <section className="bg-muted/30 py-20 md:py-28">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="mx-auto max-w-3xl text-center">
-          <span className="text-sm font-semibold uppercase tracking-wider text-secondary">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mx-auto max-w-3xl text-center"
+        >
+          <span className="text-sm font-semibold uppercase tracking-wider text-primary">
             Your Security Matters
           </span>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight text-background md:text-4xl">
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             Security Implementation
           </h2>
-          <p className="mt-4 text-lg text-background/70">
+          <p className="mt-4 text-lg text-muted-foreground">
             We've built robust security measures to protect your shopping experience
           </p>
-        </div>
+        </motion.div>
 
-        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+        >
           {securityFeatures.map((feature) => (
-            <div key={feature.title} className="group text-center">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary transition-transform duration-300 group-hover:scale-110">
+            <motion.div key={feature.title} variants={itemVariants} className="group text-center">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
                 <feature.icon className="h-8 w-8 text-primary-foreground" />
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-background">
+              <h3 className="mb-2 text-lg font-semibold text-foreground">
                 {feature.title}
               </h3>
-              <p className="text-sm text-background/70 leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed px-4">
                 {feature.description}
               </p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )

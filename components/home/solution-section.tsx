@@ -1,4 +1,7 @@
+"use client"
+
 import { ScanBarcode, ShoppingCart, CreditCard, DoorOpen, Check } from "lucide-react"
+import { motion } from "framer-motion"
 
 const capabilities = [
   {
@@ -19,13 +22,41 @@ const capabilities = [
   },
 ]
 
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15
+    }
+  }
+}
+
+const listItemVariants = {
+  hidden: { x: -20, opacity: 0 },
+  visible: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100
+    }
+  }
+}
+
 export function SolutionSection() {
   return (
     <section className="py-20 md:py-28">
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           {/* Content */}
-          <div className="space-y-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="space-y-8"
+          >
             <div>
               <span className="text-sm font-semibold uppercase tracking-wider text-primary">
                 The Solution
@@ -48,26 +79,38 @@ export function SolutionSection() {
 
             <div className="space-y-4">
               <h3 className="font-semibold text-foreground">Key Capabilities</h3>
-              <ul className="space-y-4">
+              <motion.ul
+                variants={listVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                className="space-y-4"
+              >
                 {capabilities.map((capability) => (
-                  <li key={capability.text} className="flex items-start gap-4">
+                  <motion.li key={capability.text} variants={listItemVariants} className="flex items-start gap-4">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
                       <capability.icon className="h-5 w-5 text-secondary-foreground" />
                     </div>
                     <span className="pt-2 text-muted-foreground">{capability.text}</span>
-                  </li>
+                  </motion.li>
                 ))}
-              </ul>
+              </motion.ul>
             </div>
-          </div>
+          </motion.div>
 
           {/* Visual */}
-          <div className="relative flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="relative flex items-center justify-center"
+          >
             <div className="relative rounded-2xl bg-muted p-8 lg:p-12">
               {/* Decorative elements */}
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
               <div className="absolute -bottom-4 -left-4 h-32 w-32 rounded-full bg-secondary/40 blur-2xl" />
-              
+
               <div className="relative space-y-6">
                 <div className="flex items-center gap-4 rounded-xl bg-card p-4 shadow-lg">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary">
@@ -103,7 +146,7 @@ export function SolutionSection() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

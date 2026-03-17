@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Store, Mail, Lock, ArrowRight, Loader2, Sparkles, CheckCircle2, Eye, EyeOff } from "lucide-react"
+import { Store, Mail, Lock, ArrowRight, Loader2, Sparkles, CheckCircle2, Eye, EyeOff, Clock } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { setVendorSession } from "@/app/actions/auth"
 import { checkVendorStatus, sendVendorPasswordResetOtp, verifyVendorPasswordResetOtp, resetVendorPassword } from "@/app/actions/vendor"
+import { toast } from "sonner"
 
 export default function VendorLoginPage() {
     const [isRegister, setIsRegister] = useState(false)
@@ -30,15 +31,18 @@ export default function VendorLoginPage() {
     const [newPassword, setNewPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
     const [isResettingPassword, setIsResettingPassword] = useState(false)
+    const [resetExpiry, setResetExpiry] = useState(0)
+    const [hasRequestedResetOtp, setHasRequestedResetOtp] = useState(false)
     const router = useRouter()
 
     useEffect(() => {
-        if (resetCooldown <= 0) return
+        if (resetCooldown <= 0 && resetExpiry <= 0) return
         const id = setInterval(() => {
             setResetCooldown(prev => (prev > 0 ? prev - 1 : 0))
+            setResetExpiry(prev => (prev > 0 ? prev - 1 : 0))
         }, 1000)
         return () => clearInterval(id)
-    }, [resetCooldown])
+    }, [resetCooldown, resetExpiry])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -92,8 +96,11 @@ export default function VendorLoginPage() {
             const res = await sendVendorPasswordResetOtp(email)
             if ("error" in res && res.error) {
                 setError(res.error)
+                toast.error(res.error)
             } else {
                 setResetCooldown(60)
+                setResetExpiry(600) // 10 minutes
+                setHasRequestedResetOtp(true)
                 setIsResetOtpVerified(false)
                 setError("")
             }
@@ -116,6 +123,7 @@ export default function VendorLoginPage() {
                 setError(res.error)
             } else {
                 setIsResetOtpVerified(true)
+                setResetExpiry(0)
                 setError("")
             }
         } finally {
@@ -311,6 +319,18 @@ export default function VendorLoginPage() {
                                                         Back
                                                     </Button>
                                                 </div>
+                                                {resetExpiry > 0 && (
+                                                    <p className="text-[10px] font-bold text-primary/80 mt-1 flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        Code expires in {Math.floor(resetExpiry / 60)}:{(resetExpiry % 60).toString().padStart(2, '0')}
+                                                    </p>
+                                                )}
+                                                {resetExpiry === 0 && hasRequestedResetOtp && !isResetOtpVerified && (
+                                                    <p className="text-[10px] font-bold text-destructive mt-1 flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        OTP has expired. Please resend.
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div className="space-y-2">

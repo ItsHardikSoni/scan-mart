@@ -1,4 +1,7 @@
+"use client"
+
 import { ScanBarcode, Plus, CreditCard, ArrowRight } from "lucide-react"
+import { motion } from "framer-motion"
 
 const steps = [
   {
@@ -35,11 +38,39 @@ const steps = [
   },
 ]
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100
+    }
+  }
+}
+
 export function HowItWorksSection() {
   return (
     <section className="bg-muted/30 py-20 md:py-28">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="mx-auto max-w-3xl text-center">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mx-auto max-w-3xl text-center"
+        >
           <span className="text-sm font-semibold uppercase tracking-wider text-primary">
             Simple Process
           </span>
@@ -49,28 +80,34 @@ export function HowItWorksSection() {
           <p className="mt-4 text-lg text-muted-foreground">
             Four simple steps to a queue-free shopping experience
           </p>
-        </div>
+        </motion.div>
 
         <div className="mt-16">
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid gap-8 md:grid-cols-2 lg:grid-cols-4"
+          >
             {steps.map((step, index) => (
-              <div key={step.title} className="relative">
+              <motion.div key={step.title} variants={itemVariants} className="relative">
                 {/* Connector line */}
                 {index < steps.length - 1 && (
                   <div className="absolute left-1/2 top-16 hidden h-0.5 w-full bg-border lg:block" />
                 )}
-                
+
                 <div className="relative flex flex-col items-center text-center">
                   {/* Step number */}
                   <div className="mb-4 text-sm font-bold text-muted-foreground">
                     Step {step.number}
                   </div>
-                  
+
                   {/* Icon */}
                   <div className={`relative z-10 mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${step.color} shadow-lg`}>
                     <step.icon className={`h-8 w-8 ${step.textColor}`} />
                   </div>
-                  
+
                   {/* Content */}
                   <h3 className="mb-2 text-xl font-semibold text-foreground">
                     {step.title}
@@ -79,9 +116,9 @@ export function HowItWorksSection() {
                     {step.description}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

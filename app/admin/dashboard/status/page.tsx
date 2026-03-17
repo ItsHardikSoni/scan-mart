@@ -17,7 +17,9 @@ import {
     LayoutDashboard,
     X,
     Info,
-    BarChart3
+    BarChart3,
+    Send,
+    MessageSquare
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getSystemStatus } from '@/app/actions/admin';
@@ -32,6 +34,8 @@ const iconMap: Record<string, any> = {
     'Static Assets (CDN)': Globe,
     'Search Engine': Server,
     'File Storage': HardDrive,
+    'OTP Service - Send': Send,
+    'OTP Service - Received': MessageSquare,
 };
 
 export default function SystemStatusPage() {
@@ -379,118 +383,6 @@ export default function SystemStatusPage() {
                     </p>
                 </div>
             </div>
-
-            {/* Performance Detail Modal */}
-            <AnimatePresence>
-                {selectedSystem && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setSelectedSystem(null)}
-                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="w-full max-w-lg bg-card border border-border rounded-3xl overflow-hidden shadow-2xl relative z-10"
-                        >
-                            <div className="p-6 border-b border-border/50 flex items-center justify-between bg-muted/20">
-                                <div className="flex items-center gap-3">
-                                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${selectedSystem.status === 'Operational' ? 'bg-green-500/10 text-green-500' :
-                                        'bg-orange-500/10 text-orange-500'
-                                        }`}>
-                                        {(() => {
-                                            const Icon = iconMap[selectedSystem.name] || Activity;
-                                            return <Icon className="h-5 w-5" />;
-                                        })()}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-lg text-foreground leading-tight">{selectedSystem.name}</h3>
-                                        <p className="text-xs text-muted-foreground">Resource Monitoring Detail</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedSystem(null)}
-                                    className="p-2 hover:bg-muted rounded-full transition-colors"
-                                >
-                                    <X className="h-5 w-5" />
-                                </button>
-                            </div>
-
-                            <div className="p-8 space-y-8">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Activity className="h-3 w-3 text-primary" />
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Current Status</p>
-                                        </div>
-                                        <p className={`text-xl font-bold ${selectedSystem.status === 'Operational' ? 'text-green-500' : 'text-orange-500'
-                                            }`}>{selectedSystem.status}</p>
-                                    </div>
-                                    <div className="bg-muted/30 p-4 rounded-2xl border border-border/50">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Clock className="h-3 w-3 text-primary" />
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Latency (RTT)</p>
-                                        </div>
-                                        <p className="text-xl font-bold text-foreground">{selectedSystem.latency}</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <BarChart3 className="h-4 w-4 text-primary" />
-                                            Performance Spectrum
-                                        </h4>
-                                        <span className="text-[10px] font-mono text-muted-foreground">Last 24 Hours</span>
-                                    </div>
-                                    <div className="flex items-end gap-1 h-24 bg-muted/10 p-4 rounded-2xl border border-border/50">
-                                        {[...Array(20)].map((_, i) => (
-                                            <motion.div
-                                                key={i}
-                                                initial={{ height: 0 }}
-                                                animate={{ height: `${20 + Math.random() * 80}%` }}
-                                                className={`flex-1 rounded-sm ${selectedSystem.status === 'Operational' ? 'bg-green-500/40' : 'bg-orange-500/40'
-                                                    }`}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                        <Info className="h-4 w-4 text-primary" />
-                                        Component Insights
-                                    </div>
-                                    <div className="space-y-2">
-                                        {[
-                                            { label: 'Uptime Reliability', value: selectedSystem.uptime },
-                                            { label: 'Global Availability', value: '100%' },
-                                            { label: 'Security Protocols', value: 'TLS 1.3 Active' },
-                                            { label: 'Resource Load', value: 'Low' },
-                                        ].map((item) => (
-                                            <div key={item.label} className="flex items-center justify-between text-xs px-1">
-                                                <span className="text-muted-foreground">{item.label}</span>
-                                                <span className="font-bold text-foreground">{item.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => setSelectedSystem(null)}
-                                    className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl text-sm hover:shadow-lg transition-all active:scale-95 shadow-sm shadow-primary/20"
-                                >
-                                    Close Intelligence View
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }

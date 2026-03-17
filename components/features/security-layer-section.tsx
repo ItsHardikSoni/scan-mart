@@ -1,4 +1,7 @@
+"use client"
+
 import { MapPin, MonitorOff, CreditCard, ShieldCheck } from "lucide-react"
+import { motion } from "framer-motion"
 
 const securityFeatures = [
   {
@@ -31,13 +34,40 @@ const securityFeatures = [
   },
 ]
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100
+    }
+  }
+}
+
 export function SecurityLayerSection() {
   return (
     <section className="py-20 md:py-28">
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           {/* Content */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
             <span className="text-sm font-semibold uppercase tracking-wider text-primary">
               Security Layer
             </span>
@@ -48,9 +78,15 @@ export function SecurityLayerSection() {
               We take security seriously. ScanMart is built with multiple layers of protection to ensure your data and transactions are always safe.
             </p>
 
-            <div className="mt-10 space-y-8">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="mt-10 space-y-8"
+            >
               {securityFeatures.map((feature) => (
-                <div key={feature.title} className="flex gap-6 items-start">
+                <motion.div key={feature.title} variants={itemVariants} className="flex gap-6 items-start">
                   {/* Icon */}
                   <div className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${feature.color} shadow-lg transition-transform duration-300 hover:scale-110`}>
                     <feature.icon className={`h-6 w-6 ${feature.textColor}`} />
@@ -63,13 +99,19 @@ export function SecurityLayerSection() {
                       {feature.description}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* Visual */}
-          <div className="relative flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="relative flex items-center justify-center"
+          >
             <div className="relative rounded-2xl bg-muted p-8 lg:p-12">
               {/* Decorative elements */}
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
@@ -99,7 +141,7 @@ export function SecurityLayerSection() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

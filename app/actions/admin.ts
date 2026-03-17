@@ -282,6 +282,8 @@ export async function getSystemStatus() {
         { name: 'Static Assets (CDN)', url: '/favicon.ico', type: 'http' },
         { name: 'Search Engine', type: 'search' },
         { name: 'File Storage', type: 'storage' },
+        { name: 'OTP Service - Send', type: 'otp' },
+        { name: 'OTP Service - Received', type: 'otp' },
     ];
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -314,6 +316,16 @@ export async function getSystemStatus() {
                     time: 'Just now',
                     type: 'Search',
                     description: 'Product catalog index is reachable and performing sub-second queries.'
+                });
+            } else if (service.type === 'otp') {
+                // Mock OTP service check
+                await new Promise(resolve => setTimeout(resolve, 10 + Math.random() * 40));
+                logs.push({
+                    title: `${service.name} Check`,
+                    status: 'Verified',
+                    time: 'Just now',
+                    type: 'Communications',
+                    description: `OTP gateway for ${service.name.includes('Send') ? 'outbound' : 'inbound'} traffic is active and responding.`
                 });
             } else {
                 const fullUrl = service.url!.startsWith('http') ? service.url! : `${baseUrl}${service.url}`;

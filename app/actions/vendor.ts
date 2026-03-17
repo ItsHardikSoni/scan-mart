@@ -23,7 +23,7 @@ function getTransport() {
     });
 }
 
-export async function sendVendorEmailOtp(email: string) {
+export async function sendVendorEmailOtp(email: string, excludeVendorId?: string) {
     const cookieStore = await cookies();
 
     if (!email || !email.includes('@')) {
@@ -32,11 +32,16 @@ export async function sendVendorEmailOtp(email: string) {
 
     // Block OTP if email is already registered as a vendor
     try {
-        const { data: existing } = await supabase
+        let query = supabase
             .from('vendors')
             .select('id')
-            .eq('email', email)
-            .limit(1);
+            .eq('email', email);
+
+        if (excludeVendorId) {
+            query = query.neq('id', excludeVendorId);
+        }
+
+        const { data: existing } = await query.limit(1);
 
         if (existing && existing.length > 0) {
             return { error: 'This email is already registered. Please use a different email.' };
@@ -219,9 +224,9 @@ export async function sendVendorPasswordResetOtp(email: string) {
         .from('vendors')
         .select('id')
         .eq('email', email)
-        .single();
+        .limit(1);
 
-    if (!vendor) {
+    if (!vendor || vendor.length === 0) {
         return { error: 'No vendor account found with this email.' };
     }
 

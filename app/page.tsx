@@ -5,12 +5,13 @@ import { HowItWorksSection } from "@/components/home/how-it-works-section"
 import { BenefitsSection } from "@/components/home/benefits-section"
 import { SecuritySection } from "@/components/home/security-section"
 import { CTASection } from "@/components/home/cta-section"
+import { VendorFeaturesSection } from "@/components/home/vendor-features-section"
 import { JsonLd } from "@/components/seo/json-ld"
-import { 
-  homeMetadata, 
-  homeFaqSchema, 
+import {
+  homeMetadata,
+  homeFaqSchema,
   homeHowToSchema,
-  homeBreadcrumbSchema 
+  homeBreadcrumbSchema
 } from "@/lib/seo"
 
 // Export metadata from centralized SEO files
@@ -26,6 +27,7 @@ export default function HomePage() {
       <HowItWorksSection />
       <BenefitsSection />
       <SecuritySection />
+      <VendorFeaturesSection />
       <CTASection />
     </>
   )

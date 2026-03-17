@@ -1,4 +1,7 @@
+"use client"
+
 import { UserCheck, ScanBarcode, ShoppingCart, CreditCard, FileText } from "lucide-react"
+import { motion } from "framer-motion"
 
 const flowSteps = [
   {
@@ -38,11 +41,39 @@ const flowSteps = [
   },
 ]
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100
+    }
+  }
+}
+
 export function UserFlowSection() {
   return (
     <section className="py-20 md:py-28">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="mx-auto max-w-3xl text-center">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mx-auto max-w-3xl text-center"
+        >
           <span className="text-sm font-semibold uppercase tracking-wider text-primary">
             User Journey
           </span>
@@ -52,17 +83,24 @@ export function UserFlowSection() {
           <p className="mt-4 text-lg text-muted-foreground">
             A streamlined journey from entry to exit
           </p>
-        </div>
+        </motion.div>
 
         <div className="mt-16">
           <div className="relative">
             {/* Timeline line */}
             <div className="absolute left-1/2 top-0 hidden h-full w-0.5 -translate-x-1/2 bg-border md:block" />
 
-            <div className="space-y-12">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="space-y-12"
+            >
               {flowSteps.map((step, index) => (
-                <div
+                <motion.div
                   key={step.title}
+                  variants={itemVariants}
                   className={`relative flex flex-col items-center gap-8 md:flex-row ${index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
                     }`}
                 >
@@ -88,9 +126,9 @@ export function UserFlowSection() {
 
                   {/* Spacer for alignment */}
                   <div className="hidden flex-1 md:block" />
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>

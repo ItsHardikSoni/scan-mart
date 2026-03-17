@@ -5,6 +5,8 @@ import { AdminPanelSection } from "@/components/features/admin-panel-section"
 import { UserFlowSection } from "@/components/features/user-flow-section"
 import MultiVendorSection from '@/components/features/multi-vendor-section'
 import VendorStoreConfigSection from '@/components/features/vendor-store-config-section'
+import HowVendorsApplySection from '@/components/features/how-vendors-apply-section'
+import { VendorFeaturesSection } from "@/components/home/vendor-features-section"
 import LocationRestrictedSection from '@/components/features/location-restricted-section'
 import SmartStoreDetectionSection from '@/components/features/smart-store-detection-section'
 import VendorPaymentsSection from '@/components/features/vendor-payments-section'
@@ -36,6 +38,8 @@ export default function FeaturesPage() {
       <UserFlowSection />
       <MultiVendorSection />
       <VendorStoreConfigSection />
+      <VendorFeaturesSection />
+      <HowVendorsApplySection />
       <LocationRestrictedSection />
       <SmartStoreDetectionSection />
       <VendorPaymentsSection />

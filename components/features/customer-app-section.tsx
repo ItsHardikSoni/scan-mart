@@ -1,4 +1,7 @@
+"use client"
+
 import { ScanBarcode, ShoppingCart, Receipt, CreditCard } from "lucide-react"
+import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 
 const customerFeatures = [
@@ -32,11 +35,39 @@ const customerFeatures = [
   },
 ]
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100
+    }
+  }
+}
+
 export function CustomerAppSection() {
   return (
     <section className="bg-muted/30 py-20 md:py-28">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-16"
+        >
           <span className="text-sm font-semibold uppercase tracking-wider text-primary">
             For Customers
           </span>
@@ -46,28 +77,35 @@ export function CustomerAppSection() {
           <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
             A seamless mobile experience designed to make your shopping faster and more convenient.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+        >
           {customerFeatures.map((feature) => (
-            <Card
-              key={feature.title}
-              className="group border-none bg-card shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-            >
-              <CardContent className="p-6">
-                <div className={`relative z-10 mb-6 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${feature.color} shadow-lg transition-all duration-300 group-hover:scale-110`}>
-                  <feature.icon className={`h-6 w-6 ${feature.textColor}`} />
-                </div>
-                <h3 className="mb-2 text-lg font-semibold text-foreground">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div key={feature.title} variants={itemVariants}>
+              <Card
+                className="group h-full border-none bg-card shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <CardContent className="p-6">
+                  <div className={`relative z-10 mb-6 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${feature.color} shadow-lg transition-all duration-300 group-hover:scale-110`}>
+                    <feature.icon className={`h-6 w-6 ${feature.textColor}`} />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold text-foreground">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-    Settings, Store, CreditCard, Bell, Shield, MapPin, CheckCircle2, Save, Loader2, Edit2, Mail
+    Settings, Store, CreditCard, Bell, Shield, MapPin, CheckCircle2, Save, Loader2, Edit2, Mail, Clock
 } from 'lucide-react';
 import { getVendorInfo, sendVendorEmailOtp, verifyVendorEmailOtp } from '@/app/actions/vendor';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ export default function VendorSettingsPage() {
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
     const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [otpCooldown, setOtpCooldown] = useState(0);
+    const [otpExpiry, setOtpExpiry] = useState(0);
     const [hasRequestedOtp, setHasRequestedOtp] = useState(false);
 
     useEffect(() => {
@@ -35,12 +36,13 @@ export default function VendorSettingsPage() {
     }, []);
 
     useEffect(() => {
-        if (otpCooldown <= 0) return;
+        if (otpCooldown <= 0 && otpExpiry <= 0) return;
         const id = setInterval(() => {
             setOtpCooldown(prev => (prev > 0 ? prev - 1 : 0));
+            setOtpExpiry(prev => (prev > 0 ? prev - 1 : 0));
         }, 1000);
         return () => clearInterval(id);
-    }, [otpCooldown]);
+    }, [otpCooldown, otpExpiry]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,6 +90,7 @@ export default function VendorSettingsPage() {
         setIsEmailVerified(false);
         setOtp('');
         setOtpCooldown(0);
+        setOtpExpiry(0);
         setHasRequestedOtp(false);
         setIsEditMode(false);
     };
@@ -99,6 +102,7 @@ export default function VendorSettingsPage() {
             setIsEmailVerified(false);
             setOtp('');
             setOtpCooldown(0);
+            setOtpExpiry(0);
             setHasRequestedOtp(false);
             setFieldErrors(prev => {
                 const next = { ...prev };
@@ -115,12 +119,14 @@ export default function VendorSettingsPage() {
         }
         try {
             setIsSendingOtp(true);
-            const res = await sendVendorEmailOtp(vendor.email);
+            const res = await sendVendorEmailOtp(vendor.email, vendor.id);
             if ('error' in res && res.error) {
                 setFieldErrors(prev => ({ ...prev, email: res.error }));
+                toast.error(res.error);
             } else {
                 setHasRequestedOtp(true);
                 setOtpCooldown(60);
+                setOtpExpiry(600); // 10 minutes
                 setFieldErrors(prev => {
                     const next = { ...prev };
                     delete next.email;
@@ -146,6 +152,7 @@ export default function VendorSettingsPage() {
                 setFieldErrors(prev => ({ ...prev, email: res.error }));
             } else {
                 setIsEmailVerified(true);
+                setOtpExpiry(0);
                 setFieldErrors(prev => {
                     const next = { ...prev };
                     delete next.email;
@@ -309,6 +316,18 @@ export default function VendorSettingsPage() {
                                                             {isVerifyingOtp ? 'Checking' : 'Verify OTP'}
                                                         </button>
                                                     </div>
+                                                    {otpExpiry > 0 && (
+                                                        <p className="text-[10px] font-bold text-primary mt-1 flex items-center gap-1">
+                                                            <Clock className="h-3 w-3" />
+                                                            Code expires in {Math.floor(otpExpiry / 60)}:{(otpExpiry % 60).toString().padStart(2, '0')}
+                                                        </p>
+                                                    )}
+                                                    {otpExpiry === 0 && hasRequestedOtp && !isEmailVerified && (
+                                                        <p className="text-[10px] font-bold text-red-500 mt-1 flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            OTP has expired. Please resend.
+                                                        </p>
+                                                    )}
                                                 </>
                                             )}
                                             {fieldErrors.email && <p className="text-[10px] font-bold text-red-500 ml-1">{fieldErrors.email}</p>}
