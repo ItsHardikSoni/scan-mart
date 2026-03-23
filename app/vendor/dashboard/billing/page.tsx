@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ScanLine, Search, Plus, Minus, Trash2, CreditCard,
@@ -8,6 +8,7 @@ import {
     Barcode,
     ShoppingCart
 } from 'lucide-react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const availableInventory: any[] = [];
 
@@ -29,33 +30,124 @@ export default function VendorBillingPage() {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
+    const [lastInputTime, setLastInputTime] = useState(0);
+    const [inputTimeout, setInputTimeout] = useState<NodeJS.Timeout | null>(null);
+    const [products, setProducts] = useState<any[]>([]);
+    const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+    const [productError, setProductError] = useState<string | null>(null);
+
+    // Fetch all products for the vendor
+    const fetchProducts = async () => {
+        setIsLoadingProducts(true);
+        setProductError(null);
+        try {
+            const response = await fetch('/api/v0/products');
+            if (!response.ok) {
+                throw new Error('Failed to fetch products');
+            }
+            const data = await response.json();
+            setProducts(data);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            setProductError('Failed to load products. Please try again.');
+        } finally {
+            setIsLoadingProducts(false);
+        }
+    };
+
+    // Fetch a specific product by barcode
+    const fetchProductByBarcode = async (barcode: string) => {
+        try {
+            const response = await fetch(`/api/v0/products/${barcode}`);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    return null; // Product not found
+                }
+                throw new Error('Failed to fetch product');
+            }
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching product by barcode:', error);
+            return null;
+        }
+    };
+
+    // Handle successful barcode scan
+    const handleScanSuccess = async (decodedText: string) => {
+        setBarcodeInput(decodedText);
+        setShowScanner(false);
+        setIsScanning(true);
+
+        const product = await fetchProductByBarcode(decodedText.trim());
+        setIsScanning(false);
+
+        if (product) {
+            setSearchQuery(product.product_name);
+        } else {
+            alert("Product not found! Invalid barcode.");
+        }
+    };
+
+    // Handle barcode input with auto-detection for physical scanners
+    const handleBarcodeInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        const now = Date.now();
+
+        // Detect fast input (likely from physical scanner)
+        const timeDiff = now - lastInputTime;
+        const isFastInput = lastInputTime > 0 && timeDiff < 50; // Less than 50ms between inputs
+
+        setBarcodeInput(value);
+        setLastInputTime(now);
+
+        // Clear previous timeout
+        if (inputTimeout) {
+            clearTimeout(inputTimeout);
+        }
+
+        // If fast input detected, auto-search after a short delay
+        if (isFastInput && value.trim()) {
+            const timeout = setTimeout(async () => {
+                setIsScanning(true);
+                const product = await fetchProductByBarcode(value.trim());
+                setIsScanning(false);
+
+                if (product) {
+                    setSearchQuery(product.product_name);
+                } else {
+                    alert("Product not found! Invalid barcode.");
+                }
+            }, 300); // Wait 300ms after last input
+            setInputTimeout(timeout);
+        }
+    };
 
     // Auto-focus barcode input (simulating a physical scanner connection)
     // In a real POS, you'd listen for rapid keyboard events from the scanner
 
-    const handleScan = (e: React.FormEvent) => {
+    const handleScan = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!barcodeInput.trim()) return;
 
         // Simulate scanning delay
         setIsScanning(true);
-        setTimeout(() => {
-            const product = availableInventory.find(p => p.barcode === barcodeInput.trim());
+        const product = await fetchProductByBarcode(barcodeInput.trim());
+        setIsScanning(false);
 
-            if (product) {
-                // Show product in search details
-                setSearchQuery(product.product_data.name);
-            } else {
-                // Show error toast in real app
-                alert("Product not found! Invalid barcode.");
-            }
+        if (product) {
+            // Show product in search details
+            setSearchQuery(product.product_name);
+        } else {
+            // Show error toast in real app
+            alert("Product not found! Invalid barcode.");
+        }
 
-            setBarcodeInput('');
-            setIsScanning(false);
-        }, 400); // 400ms delay for visual effect
+        // Do not clear barcodeInput to show what was scanned
     };
 
-    const addToCart = (product: typeof availableInventory[0]) => {
+    const addToCart = (product: any) => {
         setCart(prev => {
             const existing = prev.find(item => item.barcode === product.barcode);
             if (existing) {
@@ -63,7 +155,19 @@ export default function VendorBillingPage() {
                     item.barcode === product.barcode ? { ...item, cartQuantity: item.cartQuantity + 1 } : item
                 );
             }
-            return [...prev, { ...product, cartQuantity: 1 }];
+            // Transform API product to cart item format
+            const cartItem: CartItem = {
+                barcode: product.barcode,
+                product_data: {
+                    name: product.product_name,
+                    brand: product.brand,
+                    quantity: product.quantity,
+                    category: product.category
+                },
+                price: product.price,
+                cartQuantity: 1
+            };
+            return [...prev, cartItem];
         });
     };
 
@@ -98,13 +202,41 @@ export default function VendorBillingPage() {
         }, 1500);
     };
 
+    // Initialize scanner when showScanner is true
+    useEffect(() => {
+        if (showScanner) {
+            const scanner = new Html5QrcodeScanner(
+                'reader',
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    supportedScanTypes: ['qr_code', 'ean_13', 'code_128', 'code_39', 'code_93', 'codabar', 'ean_8', 'itf', 'upc_a', 'upc_e'],
+                },
+                false
+            );
+            scanner.render(handleScanSuccess, (error) => {
+                console.warn(error);
+            });
+
+            // Cleanup on unmount or when showScanner changes
+            return () => {
+                scanner.clear().catch(console.error);
+            };
+        }
+    }, [showScanner]);
+
+    // Fetch products on component mount
+    useEffect(() => {
+        fetchProducts();
+    }, []);
+
     const subtotal = cart.reduce((acc, item) => acc + (item.price * item.cartQuantity), 0);
     const tax = subtotal * 0.18; // 18% GST mock
     const total = subtotal + tax;
 
     const searchResults = searchQuery.trim() === ''
         ? []
-        : availableInventory.filter(p => p.product_data.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.barcode.includes(searchQuery) || p.product_data.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+        : products.filter(p => p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) || p.barcode.includes(searchQuery) || p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
         <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] p-4 sm:p-5 gap-4 relative items-start">
@@ -156,13 +288,22 @@ export default function VendorBillingPage() {
                             <input
                                 type="text"
                                 value={barcodeInput}
-                                onChange={(e) => setBarcodeInput(e.target.value)}
+                                onChange={handleBarcodeInputChange}
                                 disabled={isScanning || showCheckoutSuccess}
                                 placeholder="Scan barcode or enter product ID"
                                 className="flex h-10 w-full rounded-2xl border border-input bg-background/50 pl-10 pr-4 py-2 text-xs ring-offset-background file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary transition-all disabled:opacity-50"
                                 autoFocus
                             />
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowScanner(true)}
+                            disabled={isScanning || showCheckoutSuccess}
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-2xl text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-5"
+                        >
+                            <ScanLine className="h-4 w-4 mr-2" />
+                            Scan
+                        </button>
                         <button
                             type="submit"
                             disabled={isScanning || !barcodeInput.trim() || showCheckoutSuccess}
@@ -203,10 +344,10 @@ export default function VendorBillingPage() {
                             searchResults.map(product => (
                                 <div key={product.barcode} className="flex items-center justify-between p-4 rounded-2xl border border-border/50 bg-background/50 hover:border-primary/30 transition-colors">
                                     <div className="min-w-0 pr-4">
-                                        <p className="font-semibold text-foreground text-sm truncate">{product.product_data.name}</p>
+                                        <p className="font-semibold text-foreground text-sm truncate">{product.product_name}</p>
                                         <div className="flex flex-wrap items-center gap-2 md:gap-3 text-xs text-muted-foreground mt-1.5">
-                                            <span className="bg-muted px-2 py-0.5 rounded-md whitespace-nowrap">{product.product_data.brand}</span>
-                                            <span className="bg-muted px-2 py-0.5 rounded-md whitespace-nowrap">{product.product_data.quantity}</span>
+                                            <span className="bg-muted px-2 py-0.5 rounded-md whitespace-nowrap">{product.brand}</span>
+                                            <span className="bg-muted px-2 py-0.5 rounded-md whitespace-nowrap">{product.quantity}</span>
                                             <span className="bg-muted px-2 py-0.5 rounded-md whitespace-nowrap">ID: {product.barcode}</span>
                                             <span className="bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-md whitespace-nowrap">Stock: {product.stock}</span>
                                         </div>
@@ -225,9 +366,29 @@ export default function VendorBillingPage() {
                             ))
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                                <PackageOpen className="h-10 w-10 opacity-20 mb-4" />
-                                <p className="text-sm font-medium">No details to display</p>
-                                <p className="text-xs mt-1 text-center opacity-70">Search for a product or scan a barcode</p>
+                                {isLoadingProducts ? (
+                                    <>
+                                        <div className="h-10 w-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
+                                        <p className="text-sm font-medium">Loading products...</p>
+                                    </>
+                                ) : productError ? (
+                                    <>
+                                        <PackageOpen className="h-10 w-10 opacity-20 mb-4" />
+                                        <p className="text-sm font-medium text-destructive">{productError}</p>
+                                        <button
+                                            onClick={fetchProducts}
+                                            className="mt-2 text-xs text-primary hover:underline"
+                                        >
+                                            Try again
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <PackageOpen className="h-10 w-10 opacity-20 mb-4" />
+                                        <p className="text-sm font-medium">No details to display</p>
+                                        <p className="text-xs mt-1 text-center opacity-70">Search for a product or scan a barcode</p>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -338,6 +499,33 @@ export default function VendorBillingPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Scanner Modal */}
+            <AnimatePresence>
+                {showScanner && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="bg-card border border-border/50 p-6 rounded-3xl shadow-2xl max-w-md w-full mx-4"
+                        >
+                            <h3 className="text-lg font-bold text-foreground mb-4">Scan Barcode</h3>
+                            <div id="reader" className="w-full"></div>
+                            <button
+                                onClick={() => setShowScanner(false)}
+                                className="mt-4 w-full inline-flex items-center justify-center whitespace-nowrap rounded-2xl text-sm font-medium transition-all bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4"
+                            >
+                                Close Scanner
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
