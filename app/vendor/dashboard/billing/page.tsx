@@ -6,7 +6,7 @@ import {
     ScanLine, Search, Plus, Minus, Trash2, CreditCard,
     IndianRupee, ArrowRight, PackageOpen, CheckCircle2,
     Barcode,
-    ShoppingCart
+    ShoppingCart, Phone, User, Wallet, DollarSign, Banknote, AlertCircle
 } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
@@ -36,6 +36,18 @@ export default function VendorBillingPage() {
     const [products, setProducts] = useState<any[]>([]);
     const [isLoadingProducts, setIsLoadingProducts] = useState(false);
     const [productError, setProductError] = useState<string | null>(null);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+
+    // Customer and Payment details
+    const [customerName, setCustomerName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<'online' | 'cash' | 'card'>('cash');
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+    const [customerSearchTimeout, setCustomerSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+    const [customerAutoFilled, setCustomerAutoFilled] = useState(false);
 
     // Fetch all products for the vendor
     const fetchProducts = async () => {
@@ -56,6 +68,27 @@ export default function VendorBillingPage() {
         }
     };
 
+    // Fetch all orders for the vendor (for customer search)
+    const fetchOrders = async () => {
+        console.log('📥 Fetching orders...');
+        setIsLoadingOrders(true);
+        try {
+            const response = await fetch('/api/v0/orders');
+            if (!response.ok) {
+                throw new Error('Failed to fetch orders');
+            }
+            const data = await response.json();
+            console.log('📦 Orders fetched successfully:', data.length, 'orders');
+            console.log('📋 First order sample:', data[0]);
+            setOrders(data);
+        } catch (error) {
+            console.error('❌ Error fetching orders:', error);
+            // Don't show error for orders fetch, just log it
+        } finally {
+            setIsLoadingOrders(false);
+        }
+    };
+
     // Fetch a specific product by barcode
     const fetchProductByBarcode = async (barcode: string) => {
         try {
@@ -71,6 +104,59 @@ export default function VendorBillingPage() {
         } catch (error) {
             console.error('Error fetching product by barcode:', error);
             return null;
+        }
+    };
+
+    // Search for customer by phone number (local search through orders)
+    const searchCustomerByPhone = async (phone: string) => {
+        if (phone.length < 10) return;
+
+        setIsSearchingCustomer(true);
+
+        // Simulate API delay for UX consistency
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        try {
+            // Search through local orders data
+            const matchingOrder = orders.find(order => order.customer_phone === phone);
+
+            if (matchingOrder) {
+                setCustomerName(matchingOrder.customer_name);
+                setCustomerAutoFilled(true);
+            } else {
+                setCustomerAutoFilled(false);
+                // Don't clear name if user has already typed something
+                if (!customerName.trim()) {
+                    setCustomerName('');
+                }
+            }
+        } catch (error) {
+            console.error('Error searching customer:', error);
+            setCustomerAutoFilled(false);
+        } finally {
+            setIsSearchingCustomer(false);
+        }
+    };
+
+    // Handle phone number input with debounced customer search
+    const handlePhoneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const phone = e.target.value.replace(/\D/g, '').slice(0, 10);
+        setCustomerPhone(phone);
+
+        // Clear previous timeout
+        if (customerSearchTimeout) {
+            clearTimeout(customerSearchTimeout);
+        }
+
+        // Debounce customer search (wait 500ms after user stops typing)
+        if (phone.length === 10) {
+            const timeout = setTimeout(() => {
+                searchCustomerByPhone(phone);
+            }, 500);
+            setCustomerSearchTimeout(timeout);
+        } else {
+            // Clear customer name if phone is incomplete
+            setCustomerName('');
         }
     };
 
@@ -185,21 +271,68 @@ export default function VendorBillingPage() {
         setCart(prev => prev.filter(item => item.barcode !== barcode));
     };
 
-    const handleCheckout = () => {
-        if (cart.length === 0) return;
+    const handleCheckout = async () => {
+        // Validation
+        if (cart.length === 0) {
+            setPaymentError('Cart is empty');
+            return;
+        }
 
-        // Simulate payment processing
-        setIsScanning(true);
-        setTimeout(() => {
-            setIsScanning(false);
+        if (!customerName.trim()) {
+            setPaymentError('Please enter customer name');
+            return;
+        }
+
+        if (!customerPhone.trim() || !/^\d{10}$/.test(customerPhone.replace(/\D/g, ''))) {
+            setPaymentError('Please enter a valid 10-digit phone number');
+            return;
+        }
+
+        setPaymentError(null);
+        setIsProcessingPayment(true);
+
+        try {
+            const subtotal = cart.reduce((acc, item) => acc + (item.price * item.cartQuantity), 0);
+            const tax = subtotal * 0.18;
+            const total = subtotal + tax;
+
+            const response = await fetch('/api/v0/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    customer_name: customerName.trim(),
+                    customer_phone: customerPhone.trim(),
+                    items: cart,
+                    total: total.toFixed(2),
+                    payment_method: paymentMethod
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to process payment');
+            }
+
+            setIsProcessingPayment(false);
             setShowCheckoutSuccess(true);
 
-            // Reset after 3 seconds
+            // Reset form after 3 seconds
             setTimeout(() => {
                 setCart([]);
+                setCustomerName('');
+                setCustomerPhone('');
+                setPaymentMethod('cash');
                 setShowCheckoutSuccess(false);
+                setBarcodeInput('');
+                setSearchQuery('');
             }, 3000);
-        }, 1500);
+        } catch (error) {
+            console.error('Checkout error:', error);
+            setPaymentError(error instanceof Error ? error.message : 'Failed to process payment');
+            setIsProcessingPayment(false);
+        }
     };
 
     // Initialize scanner when showScanner is true
@@ -225,9 +358,10 @@ export default function VendorBillingPage() {
         }
     }, [showScanner]);
 
-    // Fetch products on component mount
+    // Fetch products and orders on component mount
     useEffect(() => {
         fetchProducts();
+        fetchOrders();
     }, []);
 
     const subtotal = cart.reduce((acc, item) => acc + (item.price * item.cartQuantity), 0);
@@ -259,12 +393,26 @@ export default function VendorBillingPage() {
                                 <CheckCircle2 className="h-10 w-10" />
                             </div>
                             <h2 className="text-2xl font-bold text-foreground mb-2">Payment Successful!</h2>
-                            <p className="text-muted-foreground mb-6">Order has been processed and receipt sent.</p>
-                            <div className="w-full bg-muted/50 rounded-xl p-4 mb-6">
-                                <p className="text-sm font-medium text-foreground">Amount Paid</p>
-                                <p className="text-3xl font-bold text-primary mt-1">₹{total.toFixed(2)}</p>
+                            <p className="text-muted-foreground mb-6">Order has been processed and saved.</p>
+                            <div className="w-full bg-muted/50 rounded-xl p-4 mb-4 text-left space-y-2">
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground">Customer</span>
+                                    <span className="font-medium text-foreground">{customerName}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground">Phone</span>
+                                    <span className="font-medium text-foreground">{customerPhone}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground">Payment</span>
+                                    <span className="font-medium text-foreground capitalize">{paymentMethod}</span>
+                                </div>
+                                <div className="pt-2 border-t border-border/50 flex justify-between">
+                                    <span className="text-muted-foreground text-xs">Amount Paid</span>
+                                    <span className="text-lg font-bold text-primary">₹{total.toFixed(2)}</span>
+                                </div>
                             </div>
-                            <p className="text-xs text-muted-foreground">Ready for next customer sequence...</p>
+                            <p className="text-xs text-muted-foreground">Ready for next customer...</p>
                         </motion.div>
                     </motion.div>
                 )}
@@ -464,8 +612,102 @@ export default function VendorBillingPage() {
                 </div>
 
                 {/* Checkout Summary Footer */}
-                <div className="bg-muted/20 border-t border-border/50 p-5 shrink-0 rounded-b-3xl">
-                    <div className="space-y-2 mb-4">
+                <div className="bg-muted/20 border-t border-border/50 p-5 shrink-0 rounded-b-3xl flex flex-col gap-4">
+                    {/* Error Message */}
+                    {paymentError && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-destructive/10 border border-destructive/30 text-destructive text-xs p-3 rounded-xl flex items-start gap-2"
+                        >
+                            <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                            <span>{paymentError}</span>
+                        </motion.div>
+                    )}
+
+                    {/* Customer Details Section */}
+                    <div className="bg-background/50 rounded-2xl p-4 border border-border/50 space-y-3">
+                        <h3 className="text-xs font-semibold text-foreground flex items-center gap-2">
+                            <User className="h-4 w-4 text-primary" />
+                            Customer Details
+                        </h3>
+
+                        {/* Customer Name Input */}
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={customerName}
+                                onChange={(e) => {
+                                    setCustomerName(e.target.value);
+                                    setCustomerAutoFilled(false); // Reset auto-fill flag when user types
+                                }}
+                                placeholder="Customer name"
+                                disabled={isProcessingPayment}
+                                className="w-full h-9 rounded-lg border border-input bg-background/50 pl-10 pr-10 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50"
+                            />
+                            {customerAutoFilled && customerName && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    <span className="text-[10px] text-green-600 font-medium">Auto-filled</span>
+                                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Customer Phone Input */}
+                        <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <input
+                                type="tel"
+                                value={customerPhone}
+                                onChange={handlePhoneInputChange}
+                                placeholder="Phone number (10 digits)"
+                                maxLength={10}
+                                disabled={isProcessingPayment}
+                                className="w-full h-9 rounded-lg border border-input bg-background/50 pl-10 pr-10 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50"
+                            />
+                            {isSearchingCustomer && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <div className="h-4 w-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                                </div>
+                            )}
+                            {customerPhone.length === 10 && !isSearchingCustomer && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Payment Method Section */}
+                    <div className="bg-background/50 rounded-2xl p-4 border border-border/50 space-y-3">
+                        <h3 className="text-xs font-semibold text-foreground flex items-center gap-2">
+                            <Wallet className="h-4 w-4 text-primary" />
+                            Payment Method
+                        </h3>
+
+                        <div className="grid grid-cols-3 gap-2">
+                            {(['cash', 'card', 'online'] as const).map((method) => (
+                                <button
+                                    key={method}
+                                    onClick={() => setPaymentMethod(method)}
+                                    disabled={isProcessingPayment}
+                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 text-xs font-medium transition-all disabled:opacity-50 ${paymentMethod === method
+                                        ? 'border-primary bg-primary/10 text-primary'
+                                        : 'border-border/50 bg-background/50 text-muted-foreground hover:border-primary/50'
+                                        }`}
+                                >
+                                    {method === 'cash' && <Banknote className="h-5 w-5" />}
+                                    {method === 'card' && <CreditCard className="h-5 w-5" />}
+                                    {method === 'online' && <DollarSign className="h-5 w-5" />}
+                                    <span className="capitalize">{method}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Order Summary */}
+                    <div className="space-y-2">
                         <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Subtotal</span>
                             <span className="font-medium text-foreground">₹{subtotal.toFixed(2)}</span>
@@ -482,15 +724,25 @@ export default function VendorBillingPage() {
                         </div>
                     </div>
 
+                    {/* Checkout Button */}
                     <button
                         onClick={handleCheckout}
-                        disabled={cart.length === 0 || isScanning}
+                        disabled={cart.length === 0 || isProcessingPayment || !customerName.trim() || !customerPhone.trim()}
                         className="w-full flex items-center justify-between whitespace-nowrap rounded-2xl text-xs font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 h-12 px-4 group relative overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out" />
                         <span className="relative z-10 flex items-center gap-2">
-                            <CreditCard className="h-5 w-5" />
-                            Charge Customer
+                            {isProcessingPayment ? (
+                                <>
+                                    <div className="h-4 w-4 border-2 border-primary-foreground/20 border-t-primary-foreground rounded-full animate-spin" />
+                                    Processing...
+                                </>
+                            ) : (
+                                <>
+                                    <CreditCard className="h-5 w-5" />
+                                    Complete Payment
+                                </>
+                            )}
                         </span>
                         <span className="relative z-10 flex items-center gap-2">
                             Pay ₹{total.toFixed(0)}
