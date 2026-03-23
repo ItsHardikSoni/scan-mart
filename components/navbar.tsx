@@ -80,14 +80,14 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary overflow-hidden">
             <Image
-              src="/icon.svg"
+              src="/favicon.jpg"
               alt="ScanMart Logo"
               width={36}
               height={36}
               className="h-full w-full object-cover"
             />
           </div>
-          <span className="text-xl font-bold text-foreground">ScanMart</span>
+          <span className="text-xl font-bold text-primary">ScanMart</span>
         </Link>
 
         {/* Desktop Navigation */}

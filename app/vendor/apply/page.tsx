@@ -21,6 +21,8 @@ export default function VendorApplyPage() {
     const [otpCooldown, setOtpCooldown] = useState(0);
     const [otpExpiry, setOtpExpiry] = useState(0);
     const [hasRequestedOtp, setHasRequestedOtp] = useState(false);
+    const [acceptTermsOfService, setAcceptTermsOfService] = useState(false);
+    const [acceptVendorAgreement, setAcceptVendorAgreement] = useState(false);
     const [formData, setFormData] = useState({
         username: '',
         store_name: '',
@@ -400,10 +402,49 @@ export default function VendorApplyPage() {
                         </div>
                     </div>
 
+                    {/* Agreement Checkboxes */}
+                    <div className="space-y-3 bg-slate-50/30 border border-slate-200/50 rounded-xl p-4">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                checked={acceptTermsOfService}
+                                onChange={(e) => setAcceptTermsOfService(e.target.checked)}
+                                className="w-5 h-5 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer"
+                            />
+                            <span className="text-xs text-slate-700 group-hover:text-slate-900">
+                                I agree to the{' '}
+                                <Link
+                                    href="/terms-of-service"
+                                    className="underline text-primary hover:text-primary/80 font-semibold"
+                                >
+                                    Terms of Service
+                                </Link>
+                            </span>
+                        </label>
+
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                checked={acceptVendorAgreement}
+                                onChange={(e) => setAcceptVendorAgreement(e.target.checked)}
+                                className="w-5 h-5 mt-0.5 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer"
+                            />
+                            <span className="text-xs text-slate-700 group-hover:text-slate-900">
+                                I agree to the{' '}
+                                <Link
+                                    href="/vendor/agreement"
+                                    className="underline text-primary hover:text-primary/80 font-semibold"
+                                >
+                                    Vendor Agreement
+                                </Link>
+                            </span>
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
                         className="w-full h-14 bg-primary text-white rounded-2xl font-black text-lg shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50"
-                        disabled={isLoading}
+                        disabled={isLoading || !acceptTermsOfService || !acceptVendorAgreement}
                     >
                         {isLoading ? (
                             <Loader2 className="w-6 h-6 animate-spin" />
@@ -416,7 +457,7 @@ export default function VendorApplyPage() {
                     </button>
 
                     <p className="text-center text-xs text-slate-400 font-medium">
-                        By applying, you agree to our <Link href="#" className="underline">Terms of Service</Link> and <Link href="#" className="underline">Vendor Agreement</Link>.
+                        Once approved, you'll receive access to your vendor dashboard and billing interface.
                     </p>
                 </form>
 
